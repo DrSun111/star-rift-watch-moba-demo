@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="900" viewBox="0 0 640 900" role="img" aria-label="赤羽贯日 card">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#190f35" />
+      <stop offset=".55" stop-color="#35246d" />
+      <stop offset="1" stop-color="#070d18" />
+    </linearGradient>
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c08cff" />
+      <stop offset=".48" stop-color="#ffe08a" />
+      <stop offset="1" stop-color="#244564" />
+    </linearGradient>
+    <linearGradient id="accentStroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8b56" />
+      <stop offset=".5" stop-color="#ffe08a" />
+      <stop offset="1" stop-color="#ffffff" />
+    </linearGradient>
+    <radialGradient id="orb" cx="50%" cy="42%" r="55%">
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset=".35" stop-color="#ff8b56" />
+      <stop offset="1" stop-color="#35246d" />
+    </radialGradient>
+    <linearGradient id="robe" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8b56" />
+      <stop offset=".55" stop-color="#35246d" />
+      <stop offset="1" stop-color="#101827" />
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe4c2" />
+      <stop offset="1" stop-color="#b87955" />
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e7eefb" />
+      <stop offset="1" stop-color="#190f35" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff8b7" />
+      <stop offset=".5" stop-color="#ffe08a" />
+      <stop offset="1" stop-color="#b87619" />
+    </linearGradient>
+    <linearGradient id="chest" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8b56" />
+      <stop offset="1" stop-color="#17243a" />
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4fbff" />
+      <stop offset=".55" stop-color="#ff8b56" />
+      <stop offset="1" stop-color="#28344a" />
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.2 0 1 0 0 0.76 0 0 1 0 1 0 0 0 .75 0" result="glow" />
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity=".45" />
+    </filter>
+    <clipPath id="round">
+      <rect x="22" y="22" width="596" height="856" rx="42" />
+    </clipPath>
+  </defs>
+  <rect width="640" height="900" fill="#060c16" />
+  <g clip-path="url(#round)">
+    <rect x="22" y="22" width="596" height="856" fill="url(#bg)" />
+    <path d="M80 730 C180 595 130 455 238 318 C330 202 454 188 558 82 L558 878 L80 878 Z" fill="#ff8b56" opacity=".11" />
+    <path d="M84 196 C168 92 291 72 380 132 C472 194 520 318 586 348" fill="none" stroke="#ffe08a" stroke-width="2" opacity=".35" />
+    <path d="M76 606 C188 518 242 554 326 456 C415 354 467 330 572 374" fill="none" stroke="#ff8b56" stroke-width="3" opacity=".24" />
+    <g opacity=".35">
+      <circle cx="104" cy="104" r="3" fill="#ffffff" />
+      <circle cx="514" cy="148" r="4" fill="#ffe08a" />
+      <circle cx="556" cy="632" r="3" fill="#ffffff" />
+      <circle cx="126" cy="700" r="4" fill="#ff8b56" />
+      <circle cx="474" cy="732" r="2" fill="#ffffff" />
+    </g>
+    <circle cx="320" cy="438" r="226" fill="none" stroke="url(#accentStroke)" stroke-width="5" opacity=".35" />
+    <circle cx="320" cy="438" r="176" fill="none" stroke="#ffffff" stroke-width="2" opacity=".2" stroke-dasharray="18 18" />
+    
+    <g filter="url(#shadow)">
+      <path d="M198 678 C214 566 245 486 320 486 C395 486 426 566 442 678 Z" fill="url(#robe)" />
+      <path d="M248 515 C264 456 294 421 320 421 C346 421 376 456 392 515 C354 548 286 548 248 515 Z" fill="rgba(255,255,255,.16)" />
+      <circle cx="320" cy="338" r="63" fill="url(#skin)" />
+      <path d="M246 332 C254 252 303 216 356 238 C400 258 414 309 389 358 C362 319 303 305 246 332 Z" fill="url(#hair)" />
+      <path d="M244 684 C268 634 372 634 396 684 Z" fill="rgba(255,255,255,.22)" />
+    </g>
+    
+      <g stroke="url(#accentStroke)" stroke-width="13" stroke-linecap="round" filter="url(#glow)">
+        <path d="M220 575 C285 430 348 280 428 142" />
+        <path d="M422 575 C358 430 296 280 216 142" />
+      </g>
+      <g fill="url(#metal)">
+        <path d="M199 604 L238 565 L270 610 L226 642 Z" />
+        <path d="M441 604 L402 565 L370 610 L414 642 Z" />
+      </g>
+    
+    <rect x="22" y="22" width="596" height="856" rx="42" fill="none" stroke="url(#frame)" stroke-width="12" />
+    <rect x="48" y="48" width="544" height="804" rx="30" fill="none" stroke="#ffffff" stroke-width="2" opacity=".22" />
+    <path d="M72 754 H568" stroke="url(#frame)" stroke-width="3" opacity=".7" />
+    <text x="88" y="116" fill="#f6f1ff" font-size="34" font-weight="800" font-family="Microsoft YaHei, PingFang SC, sans-serif">赤羽贯日</text>
+    <text x="90" y="157" fill="#ffe08a" font-size="21" font-weight="700" font-family="Microsoft YaHei, PingFang SC, sans-serif">Q · 爆发切入</text>
+    <text x="88" y="816" fill="#f6f1ff" font-size="20" font-weight="700" opacity=".88" font-family="Microsoft YaHei, PingFang SC, sans-serif">ASTRA SKILL CODE</text>
+    <text x="552" y="816" text-anchor="end" fill="#ffe08a" font-size="26" font-weight="900" font-family="Inter, sans-serif">#05</text>
+  </g>
+</svg>
