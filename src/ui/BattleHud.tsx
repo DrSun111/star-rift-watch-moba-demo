@@ -1,4 +1,4 @@
-import { Crosshair, HeartPulse, Pause, Settings, Shield, Sword, Volume2 } from "lucide-react";
+import { Crosshair, Crown, HeartPulse, Pause, Settings, Shield, Sword, Timer, Volume2, Zap } from "lucide-react";
 import { heroById } from "../data/heroes";
 import { secondsToClock } from "../game/core/math";
 import { HeroDefinition, HudSnapshot } from "../game/core/types";
@@ -45,10 +45,47 @@ export function BattleHud({ hud, heroId, paused, showScoreboard, onPause }: Batt
         </div>
       </div>
 
+      {hud.buffs.length > 0 && (
+        <div className="buff-rack glass-panel">
+          {hud.buffs.map((buff) => (
+            <span key={buff.id} className={`buff-chip ${buff.type}`} style={{ borderColor: buff.color }}>
+              <Zap size={14} />
+              <b>{buff.name}</b>
+              <i>{Math.ceil(buff.remaining)}s</i>
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="hud-score glass-panel">
         <span className="ally-score">{hud.allyKills}</span>
         <strong>{secondsToClock(hud.gameTime)}</strong>
         <span className="enemy-score">{hud.enemyKills}</span>
+      </div>
+
+      <div className="boss-tracker glass-panel">
+        {hud.bossStatus.map((boss) => {
+          const rate = Math.max(0, Math.min(1, boss.hp / boss.maxHp));
+          return (
+            <article key={boss.laneIndex} className={`boss-chip ${boss.alive ? "alive" : "respawning"}`} style={{ borderColor: boss.color }}>
+              <div>
+                <Crown size={14} />
+                <strong>{boss.laneName}</strong>
+                <span>{boss.alive ? boss.name.replace(`${boss.laneName}路`, "") : "刷新中"}</span>
+              </div>
+              {boss.alive ? (
+                <i className="boss-hp">
+                  <b style={{ width: `${rate * 100}%`, background: boss.color }} />
+                </i>
+              ) : (
+                <small>
+                  <Timer size={13} />
+                  {Math.ceil(boss.respawn)}s
+                </small>
+              )}
+            </article>
+          );
+        })}
       </div>
 
       <div className="hud-top-right">
@@ -56,7 +93,7 @@ export function BattleHud({ hud, heroId, paused, showScoreboard, onPause }: Batt
           {[-16, 0, 16].map((lane) => (
             <i key={lane} className="minimap-lane" style={{ top: `${((lane + 30) / 60) * 100}%` }} />
           ))}
-          {hud.minimapUnits.map((unit) => (
+          {hud.minimapUnits.filter((unit) => unit.visible).map((unit) => (
             <span
               key={unit.id}
               className={`map-dot ${unit.team} ${unit.kind} ${unit.isPlayer ? "player" : ""} ${unit.isBoss ? "boss" : ""} ${unit.alive ? "" : "dead"}`}
@@ -64,6 +101,16 @@ export function BattleHud({ hud, heroId, paused, showScoreboard, onPause }: Batt
               title={unit.name}
             />
           ))}
+          {hud.bossStatus
+            .filter((boss) => !boss.alive)
+            .map((boss) => (
+              <span
+                key={`boss-respawn-${boss.laneIndex}`}
+                className="map-dot neutral monster boss respawning"
+                style={{ left: `${((boss.x + 62) / 124) * 100}%`, top: `${((boss.z + 30) / 60) * 100}%` }}
+                title={`${boss.laneName} BOSS ${Math.ceil(boss.respawn)}s`}
+              />
+            ))}
         </div>
         <button className="hud-icon-button" onClick={onPause} aria-label="暂停">
           {paused ? <Settings size={20} /> : <Pause size={20} />}
@@ -86,10 +133,11 @@ export function BattleHud({ hud, heroId, paused, showScoreboard, onPause }: Batt
         {hud.skills.map((skill) => {
           const rate = skill.maxCooldown > 0 ? skill.cooldown / skill.maxCooldown : 0;
           return (
-            <button key={skill.key} className={`skill-button ${skill.ready ? "ready" : "cooling"}`} aria-label={`${skill.key} ${skill.name}`}>
+            <button key={skill.key} className={`skill-button ${skill.ready ? "ready" : "cooling"} ${skill.equipped ? "equipped" : ""}`} aria-label={`${skill.key} ${skill.name}`}>
               <SkillIcon icon={skill.icon} />
               <span className="skill-key">{skill.key}</span>
               <span className="skill-name">{skill.name}</span>
+              {skill.equipped && <em className="skill-badge">卡</em>}
               {!skill.ready && (
                 <>
                   <i className="cooldown-mask" style={{ height: `${Math.min(100, rate * 100)}%` }} />
@@ -153,6 +201,10 @@ export function BattleHud({ hud, heroId, paused, showScoreboard, onPause }: Batt
             </strong>
             <span>金币</span>
             <strong>{Math.round(hud.playerGold)}</strong>
+            <span>BOSS</span>
+            <strong>
+              {hud.bossKills.ally}/{hud.bossKills.enemy}
+            </strong>
           </div>
         </div>
       )}

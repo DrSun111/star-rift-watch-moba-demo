@@ -4,8 +4,8 @@ import { heroes } from "../data/heroes";
 import type { GachaCard } from "../data/gacha";
 import type { GameSettings, HeroDefinition, HudSnapshot, MatchResult } from "../game/core/types";
 import { drawGachaCards } from "../utils/gacha";
-import { addRecord, defaultGachaState, defaultSettings, loadGachaState, loadLastHero, loadRecords, loadSettings, saveGachaState, saveLastHero, saveSettings } from "../utils/storage";
-import type { GachaSaveState } from "../utils/storage";
+import { addMasteryResult, addRecord, defaultGachaState, defaultSettings, loadGachaState, loadLastHero, loadMastery, loadRecords, loadSettings, saveGachaState, saveLastHero, saveSettings } from "../utils/storage";
+import type { GachaSaveState, HeroMasteryState } from "../utils/storage";
 
 type Screen = "home" | "select" | "battle" | "results" | "gacha";
 
@@ -14,6 +14,7 @@ interface AppState {
   selectedHeroId: HeroDefinition["id"];
   settings: GameSettings;
   records: MatchResult[];
+  mastery: HeroMasteryState;
   gacha: GachaSaveState;
   lastGachaDraw: GachaCard[];
   lastResult?: MatchResult;
@@ -39,6 +40,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedHeroId: loadLastHero(heroes[0].id),
   settings: typeof localStorage === "undefined" ? defaultSettings : loadSettings(),
   records: typeof localStorage === "undefined" ? [] : loadRecords(),
+  mastery: typeof localStorage === "undefined" ? {} : loadMastery(),
   gacha: typeof localStorage === "undefined" ? defaultGachaState : loadGachaState(),
   lastGachaDraw: [],
   battleSeed: Date.now(),
@@ -46,18 +48,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   showScoreboard: false,
   setScreen: (screen) => set({ screen }),
   selectHero: (heroId) => {
-    saveLastHero(heroId);
-    set({ selectedHeroId: heroId });
+    const safeHeroId = heroId === "wuxiang" && !get().settings.funMode ? heroes[0].id : heroId;
+    saveLastHero(safeHeroId);
+    set({ selectedHeroId: safeHeroId });
   },
   updateSettings: (patch) => {
     const settings = { ...get().settings, ...patch };
+    const selectedHeroId = !settings.funMode && get().selectedHeroId === "wuxiang" ? heroes[0].id : get().selectedHeroId;
     saveSettings(settings);
-    set({ settings });
+    if (selectedHeroId !== get().selectedHeroId) saveLastHero(selectedHeroId);
+    set({ settings, selectedHeroId });
   },
   setHud: (hud) => set({ hud }),
   startBattle: () =>
     set({
       screen: "battle",
+      selectedHeroId: get().selectedHeroId === "wuxiang" && !get().settings.funMode ? heroes[0].id : get().selectedHeroId,
       paused: false,
       showScoreboard: false,
       hud: undefined,
@@ -65,11 +71,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     }),
   finishBattle: (result) => {
     const records = addRecord(result);
+    const mastery = addMasteryResult(result);
     const current = get().gacha;
     const earnedGold = Math.max(0, Math.round(result.gold));
     const gacha: GachaSaveState = { ...current, equippedSkillCardIds: current.equippedSkillCardIds ?? {}, gold: current.gold + earnedGold };
     saveGachaState(gacha);
-    set({ screen: "results", lastResult: result, records, gacha, paused: false, showScoreboard: false });
+    set({ screen: "results", lastResult: result, records, mastery, gacha, paused: false, showScoreboard: false });
   },
   restartBattle: () =>
     set({

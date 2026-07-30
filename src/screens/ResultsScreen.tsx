@@ -28,10 +28,22 @@ export function ResultsScreen() {
             伤害<strong>{lastResult.damageDealt}</strong>
           </span>
           <span>
+            DPM<strong>{Math.round(lastResult.damagePerMinute ?? 0)}</strong>
+          </span>
+          <span>
             承伤<strong>{lastResult.damageTaken}</strong>
           </span>
           <span>
+            伤害占比<strong>{Math.round((lastResult.damageShare ?? 0) * 100)}%</strong>
+          </span>
+          <span>
+            BOSS<strong>{lastResult.bossKills ?? 0}</strong>
+          </span>
+          <span>
             入账金币<strong>{lastResult.gold}</strong>
+          </span>
+          <span>
+            MVP<strong>{lastResult.mvp ?? hero.name}</strong>
           </span>
           <span>
             时长<strong>{secondsToClock(lastResult.duration)}</strong>

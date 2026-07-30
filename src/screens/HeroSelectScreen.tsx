@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, RotateCcw, Shield, SlidersHorizontal, Sparkles, Swords, WandSparkles } from "lucide-react";
+import { Check, ChevronLeft, Lock, RotateCcw, Shield, SlidersHorizontal, Sparkles, Swords, WandSparkles } from "lucide-react";
 import { CSSProperties, useMemo, useState } from "react";
 import { useAppStore } from "../app/store";
 import { HeroPreview } from "../components/HeroPreview";
@@ -37,7 +37,7 @@ function RoleIcon({ role }: { role: HeroDefinition["role"] }) {
 }
 
 function buildPreviewDraft(selected: HeroDefinition) {
-  const remaining = heroes.filter((hero) => hero.id !== selected.id);
+  const remaining = heroes.filter((hero) => hero.id !== selected.id && hero.id !== "wuxiang");
   return {
     allies: [selected, ...remaining.slice(0, 4)],
     enemies: remaining.slice(4, 9)
@@ -48,7 +48,8 @@ export function HeroSelectScreen() {
   const { selectedHeroId, selectHero, startBattle, setScreen, settings, updateSettings } = useAppStore();
   const [filter, setFilter] = useState<(typeof filters)[number]>("全部");
   const [launching, setLaunching] = useState(false);
-  const selected = heroes.find((hero) => hero.id === selectedHeroId) ?? heroes[0];
+  const standardHeroes = useMemo(() => heroes.filter((hero) => hero.id !== "wuxiang"), []);
+  const selected = heroes.find((hero) => hero.id === selectedHeroId && (settings.funMode || hero.id !== "wuxiang")) ?? standardHeroes[0];
   const visibleHeroes = useMemo(() => heroes.filter((hero) => filter === "全部" || hero.role === filter), [filter]);
   const draft = useMemo(() => buildPreviewDraft(selected), [selected]);
 
@@ -84,23 +85,29 @@ export function HeroSelectScreen() {
             ))}
           </div>
           <div className="hero-card-list">
-            {visibleHeroes.map((hero) => (
-              <button
-                key={hero.id}
-                data-testid={`hero-card-${hero.id}`}
-                className={`hero-card ${selectedHeroId === hero.id ? "selected" : ""}`}
-                onClick={() => selectHero(hero.id)}
-                style={{ "--hero-primary": hero.palette.primary, "--hero-secondary": hero.palette.secondary } as CSSProperties}
-              >
-                <div className="hero-card-mark">
-                  <RoleIcon role={hero.role} />
-                </div>
-                <div>
-                  <strong>{hero.name}</strong>
-                  <span>{hero.title}</span>
-                </div>
-              </button>
-            ))}
+            {visibleHeroes.map((hero) => {
+              const locked = hero.id === "wuxiang" && !settings.funMode;
+              return (
+                <button
+                  key={hero.id}
+                  data-testid={`hero-card-${hero.id}`}
+                  className={`hero-card ${selected.id === hero.id ? "selected" : ""} ${locked ? "locked" : ""}`}
+                  onClick={() => {
+                    if (!locked) selectHero(hero.id);
+                  }}
+                  disabled={locked}
+                  style={{ "--hero-primary": hero.palette.primary, "--hero-secondary": hero.palette.secondary } as CSSProperties}
+                >
+                  <div className="hero-card-mark">
+                    {locked ? <Lock size={18} /> : <RoleIcon role={hero.role} />}
+                  </div>
+                  <div>
+                    <strong>{hero.name}</strong>
+                    <span>{locked ? "娱乐模式解锁" : hero.title}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
           <section className="tuning-panel">
             <div className="tuning-heading">
@@ -112,6 +119,10 @@ export function HeroSelectScreen() {
                 <RotateCcw size={16} />
               </button>
             </div>
+            <label className="setting-row compact-toggle">
+              <span>娱乐模式：解锁无敌英雄</span>
+              <input type="checkbox" checked={settings.funMode} onChange={(event) => updateSettings({ funMode: event.target.checked })} />
+            </label>
             {tuningControls.map((control) => {
               const value = settings.tuning[control.key];
               return (

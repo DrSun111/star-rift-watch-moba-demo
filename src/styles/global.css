@@ -62,6 +62,16 @@ button:disabled {
   overflow: hidden;
 }
 
+.screen-loading {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #f8d26b;
+  background: #06111f;
+  font-weight: 900;
+}
+
 .glass-panel {
   border: 1px solid var(--line);
   background:
@@ -812,6 +822,14 @@ button:disabled {
   padding: 8px 10px;
 }
 
+.setting-row input[type="checkbox"],
+.compact-toggle input[type="checkbox"] {
+  justify-self: end;
+  width: 42px;
+  height: 22px;
+  accent-color: var(--gold);
+}
+
 .select-screen {
   padding: 18px;
 }
@@ -1011,6 +1029,18 @@ button:disabled {
 .hero-card.selected::after {
   opacity: 1;
   transform: translateY(-8px);
+}
+
+.hero-card.locked {
+  cursor: not-allowed;
+  opacity: 0.58;
+  filter: grayscale(0.45);
+}
+
+.hero-card.locked:hover {
+  transform: none;
+  border-color: rgba(91, 238, 255, 0.18);
+  box-shadow: none;
 }
 
 .hero-card-mark {
@@ -1333,6 +1363,36 @@ button:disabled {
   line-height: 1;
 }
 
+.buff-rack {
+  position: absolute;
+  top: 92px;
+  left: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 330px;
+  padding: 7px;
+}
+
+.buff-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(248, 210, 107, 0.38);
+  border-radius: 7px;
+  background: rgba(7, 17, 31, 0.72);
+  color: #eefbff;
+  font-size: 0.74rem;
+}
+
+.buff-chip i {
+  color: var(--gold);
+  font-style: normal;
+  font-weight: 800;
+}
+
 .hud-score {
   position: absolute;
   top: 14px;
@@ -1358,6 +1418,76 @@ button:disabled {
 .enemy-score {
   color: var(--red);
   font-weight: 900;
+}
+
+.boss-tracker {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 7px;
+  width: min(520px, calc(100vw - 430px));
+  min-width: 380px;
+  padding: 8px;
+  transform: translateX(-50%);
+}
+
+.boss-chip {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid rgba(248, 210, 107, 0.32);
+  border-radius: 8px;
+  background: rgba(6, 16, 29, 0.7);
+}
+
+.boss-chip div,
+.boss-chip small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.boss-chip strong {
+  color: #ffffff;
+  font-size: 0.78rem;
+}
+
+.boss-chip span {
+  min-width: 0;
+  overflow: hidden;
+  color: #aac9dc;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boss-chip small {
+  color: var(--gold);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.boss-chip.respawning {
+  opacity: 0.76;
+}
+
+.boss-hp {
+  position: relative;
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.boss-hp b {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
 }
 
 .hud-top-right {
@@ -1449,6 +1579,17 @@ button:disabled {
   box-shadow: 0 0 14px rgba(248, 210, 107, 0.78);
 }
 
+.map-dot.respawning {
+  opacity: 0.46;
+  animation: respawnPulse 1s ease-in-out infinite;
+}
+
+@keyframes respawnPulse {
+  50% {
+    transform: translate(-50%, -50%) rotate(45deg) scale(0.72);
+  }
+}
+
 .map-dot.dead {
   opacity: 0.22;
 }
@@ -1465,7 +1606,7 @@ button:disabled {
 
 .announcement-stack {
   position: absolute;
-  top: 70px;
+  top: 150px;
   left: 50%;
   display: grid;
   gap: 8px;
@@ -1539,6 +1680,27 @@ button:disabled {
 
 .skill-button.cooling {
   filter: saturate(0.62);
+}
+
+.skill-button.equipped {
+  border-color: rgba(248, 210, 107, 0.82);
+  box-shadow: inset 0 0 18px rgba(248, 210, 107, 0.16), 0 0 18px rgba(91, 238, 255, 0.16);
+}
+
+.skill-badge {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: rgba(248, 210, 107, 0.94);
+  color: #07111d;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 900;
 }
 
 .skill-key {
@@ -1814,6 +1976,22 @@ button:disabled {
   .gacha-card-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
+
+  .boss-tracker {
+    top: 118px;
+    width: min(520px, calc(100vw - 28px));
+    min-width: 0;
+  }
+
+  .buff-rack {
+    top: 92px;
+    right: 14px;
+    max-width: none;
+  }
+
+  .announcement-stack {
+    top: 192px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1844,8 +2022,14 @@ button:disabled {
     top: 92px;
   }
 
-  .hud-top-right {
+  .boss-tracker {
     top: 138px;
+    grid-template-columns: 1fr;
+    width: calc(100vw - 28px);
+  }
+
+  .hud-top-right {
+    top: 266px;
   }
 
   .minimap {
@@ -1857,6 +2041,16 @@ button:disabled {
     width: calc(100vw - 20px);
     justify-content: center;
     gap: 6px;
+  }
+
+  .buff-rack {
+    top: 82px;
+    left: 14px;
+    right: 14px;
+  }
+
+  .announcement-stack {
+    top: 372px;
   }
 
   .basic-attack-button,

@@ -5,9 +5,13 @@ import { useAppStore } from "../app/store";
 import { secondsToClock } from "../game/core/math";
 
 export function HomeScreen() {
-  const { setScreen, settings, updateSettings, records } = useAppStore();
+  const { setScreen, settings, updateSettings, records, mastery } = useAppStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const wins = records.filter((record) => record.outcome === "victory").length;
+  const topMastery = Object.entries(mastery)
+    .sort(([, a], [, b]) => (b?.games ?? 0) - (a?.games ?? 0))[0];
+  const topHero = topMastery ? heroes.find((hero) => hero.id === topMastery[0]) : undefined;
+  const topStats = topMastery?.[1];
 
   return (
     <main className="screen home-screen">
@@ -52,6 +56,10 @@ export function HomeScreen() {
                 : "暂无"}
             </strong>
           </article>
+          <article className="glass-panel compact-panel">
+            <span>英雄熟练度</span>
+            <strong>{topHero && topStats ? `${topHero.name} ${topStats.games}局 / ${Math.round((topStats.wins / Math.max(1, topStats.games)) * 100)}%` : "暂无"}</strong>
+          </article>
         </div>
       </section>
 
@@ -73,6 +81,22 @@ export function HomeScreen() {
                 {settings.audio ? <Volume2 size={20} /> : <VolumeX size={20} />}
                 {settings.audio ? "开启" : "关闭"}
               </button>
+            </label>
+            <label className="setting-row">
+              <span>战争迷雾</span>
+              <input type="checkbox" checked={settings.fogOfWar} onChange={(event) => updateSettings({ fogOfWar: event.target.checked })} />
+            </label>
+            <label className="setting-row">
+              <span>屏幕震动</span>
+              <input type="checkbox" checked={settings.screenShake} onChange={(event) => updateSettings({ screenShake: event.target.checked })} />
+            </label>
+            <label className="setting-row">
+              <span>伤害数字</span>
+              <input type="checkbox" checked={settings.damageNumbers} onChange={(event) => updateSettings({ damageNumbers: event.target.checked })} />
+            </label>
+            <label className="setting-row">
+              <span>娱乐模式英雄</span>
+              <input type="checkbox" checked={settings.funMode} onChange={(event) => updateSettings({ funMode: event.target.checked })} />
             </label>
             <label className="setting-row">
               <span>默认镜头距离</span>

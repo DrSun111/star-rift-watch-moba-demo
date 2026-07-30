@@ -89,7 +89,7 @@ export interface HeroDefinition {
 
 export interface StatusEffect {
   id: string;
-  type: "slow" | "stun" | "knockback" | "shield" | "damageReduction" | "speed" | "starBlade" | "domain";
+  type: "slow" | "stun" | "knockback" | "shield" | "damageReduction" | "speed" | "attackBoost" | "starBlade" | "domain";
   remaining: number;
   value: number;
   sourceId?: string;
@@ -137,6 +137,7 @@ export interface GameUnit {
   bossBuff?: BossBuffType;
   bossSkill?: BossSkillType;
   bossTemplateId?: string;
+  bossEnraged?: boolean;
   invulnerable?: boolean;
   barFill?: THREE.Mesh;
   shieldMesh?: THREE.Object3D;
@@ -201,6 +202,7 @@ export interface SkillSnapshot {
   ready: boolean;
   name: string;
   icon: AbilityDefinition["icon"];
+  equipped?: boolean;
 }
 
 export interface HudSnapshot {
@@ -220,6 +222,30 @@ export interface HudSnapshot {
   respawnTimer: number;
   skills: SkillSnapshot[];
   announcements: Announcement[];
+  bossKills: {
+    ally: number;
+    enemy: number;
+  };
+  bossStatus: Array<{
+    laneIndex: number;
+    laneName: string;
+    name: string;
+    buff: BossBuffType;
+    color: string;
+    alive: boolean;
+    hp: number;
+    maxHp: number;
+    respawn: number;
+    x: number;
+    z: number;
+  }>;
+  buffs: Array<{
+    id: string;
+    type: BossBuffType;
+    name: string;
+    remaining: number;
+    color: string;
+  }>;
   minimapUnits: Array<{
     id: string;
     team: Team;
@@ -228,6 +254,7 @@ export interface HudSnapshot {
     x: number;
     z: number;
     alive: boolean;
+    visible: boolean;
     isPlayer?: boolean;
     isBoss?: boolean;
   }>;
@@ -243,12 +270,20 @@ export interface MatchResult {
   gold: number;
   duration: number;
   finishedAt: string;
+  bossKills?: number;
+  mvp?: string;
+  damageShare?: number;
+  damagePerMinute?: number;
 }
 
 export interface GameSettings {
   quality: "high" | "balanced" | "low";
   audio: boolean;
   cameraDistance: number;
+  funMode: boolean;
+  damageNumbers: boolean;
+  screenShake: boolean;
+  fogOfWar: boolean;
   tuning: {
     skillDamageMultiplier: number;
     basicAttackMultiplier: number;

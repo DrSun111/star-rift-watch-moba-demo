@@ -56,6 +56,11 @@ interface TowerAggro {
   timer: number;
 }
 
+interface DelayedAction {
+  remaining: number;
+  action: () => void;
+}
+
 const abilityKeys: AbilityKey[] = ["Q", "W", "E", "R"];
 const xpNeed = (level: number) => 100 + Math.max(0, level - 1) * 40;
 const teamColor: Record<Team, string> = {
@@ -115,6 +120,11 @@ const bossBuffName: Record<BossBuffType, string> = {
   haste: "流光疾行",
   guard: "玄晶守护"
 };
+const bossBuffColor: Record<BossBuffType, string> = {
+  power: "#ff8b56",
+  haste: "#f8d26b",
+  guard: "#5beeff"
+};
 
 export class GameEngine implements AiContext {
   time = 0;
@@ -136,6 +146,8 @@ export class GameEngine implements AiContext {
   private readonly announcements: Announcement[] = [];
   private readonly portals: Array<{ id: string; object: THREE.Group; position: THREE.Vector3; target: THREE.Vector3; radius: number }> = [];
   private readonly portalCooldowns = new Map<string, number>();
+  private readonly bossRespawns = new Map<number, number>();
+  private readonly delayedActions: DelayedAction[] = [];
   private readonly effects: EffectSystem;
   private readonly audio: AudioManager;
   private readonly heroId: HeroDefinition["id"];
@@ -153,9 +165,9 @@ export class GameEngine implements AiContext {
   private paused = false;
   private finished = false;
   private gameTime = 0;
-  private bossSpawnTimer = 0;
   private hudTimer = 0;
   private trailTimer = 0;
+  private screenShake = 0;
   private cameraDistance: number;
   private desiredCameraDistance: number;
   private cameraMode: 0 | 1 | 2 | 3 = 0;
@@ -163,6 +175,8 @@ export class GameEngine implements AiContext {
   private aimIndicator?: THREE.Group;
   private allyKills = 0;
   private enemyKills = 0;
+  private readonly bossKills = { ally: 0, enemy: 0 };
+  private playerBossKills = 0;
   private towerAggro: Partial<Record<Team, TowerAggro>> = {};
   private rightMouseDown = false;
 
@@ -188,7 +202,8 @@ export class GameEngine implements AiContext {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, options.settings.quality === "high" ? 1.75 : 1.2));
     this.renderer.shadowMap.enabled = options.settings.quality !== "low";
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.effects = new EffectSystem(this.scene, this.overlay, this.camera);
+    const particleBudget = options.settings.quality === "low" ? 90 : options.settings.quality === "balanced" ? 140 : 210;
+    this.effects = new EffectSystem(this.scene, this.overlay, this.camera, particleBudget);
     this.audio = new AudioManager(options.settings.audio);
     this.setupScene();
     this.bindEvents();
@@ -570,20 +585,17 @@ export class GameEngine implements AiContext {
   private update(dt: number): void {
     this.time += dt;
     this.gameTime += dt;
-    this.bossSpawnTimer += dt;
     this.hudTimer += dt;
     this.trailTimer += dt;
-
-    if (this.bossSpawnTimer >= bossSpawnInterval) {
-      this.bossSpawnTimer = 0;
-      this.refreshMissingBosses();
-    }
+    this.screenShake = Math.max(0, this.screenShake - dt * 1.35);
+    this.updateBossRespawns(dt);
 
     this.updateTowerAggro(dt);
     this.updateStatuses(dt);
     this.updatePlayer(dt);
     this.updateAi(dt);
     this.updateBosses(dt);
+    this.updateDelayedActions(dt);
     this.updateTowers(dt);
     this.updatePortals(dt);
     this.updateProjectiles(dt);
@@ -594,10 +606,53 @@ export class GameEngine implements AiContext {
     this.updateAnnouncements(dt);
     this.checkWinLoss();
 
-    if (this.hudTimer >= 0.08) {
+    if (this.hudTimer >= (this.settings.quality === "low" ? 0.14 : 0.1)) {
       this.hudTimer = 0;
       this.emitHud();
     }
+  }
+
+  private updateBossRespawns(dt: number): void {
+    const reservedTemplates = new Set(
+      Array.from(this.units.values())
+        .filter((unit) => unit.isBoss && unit.alive && unit.bossTemplateId)
+        .map((unit) => unit.bossTemplateId as string)
+    );
+
+    for (const config of bossLaneConfigs) {
+      const bossAlive = Array.from(this.units.values()).some((unit) => unit.isBoss && unit.alive && unit.laneIndex === config.laneIndex);
+      if (bossAlive) {
+        this.bossRespawns.delete(config.laneIndex);
+        continue;
+      }
+
+      const remaining = (this.bossRespawns.get(config.laneIndex) ?? 0) - dt;
+      if (remaining > 0) {
+        this.bossRespawns.set(config.laneIndex, remaining);
+        continue;
+      }
+
+      const template = this.pickBossTemplate(reservedTemplates);
+      reservedTemplates.add(template.id);
+      this.bossRespawns.delete(config.laneIndex);
+      this.spawnLaneBoss(config, template);
+      this.announce(`${config.laneName} BOSS 已随机刷新：${template.title}`, "info");
+    }
+  }
+
+  private updateDelayedActions(dt: number): void {
+    for (let i = this.delayedActions.length - 1; i >= 0; i -= 1) {
+      const item = this.delayedActions[i];
+      item.remaining -= dt;
+      if (item.remaining <= 0) {
+        item.action();
+        this.delayedActions.splice(i, 1);
+      }
+    }
+  }
+
+  private schedule(delay: number, action: () => void): void {
+    this.delayedActions.push({ remaining: delay, action });
   }
 
   private updatePlayer(dt: number): void {
@@ -799,6 +854,15 @@ export class GameEngine implements AiContext {
     for (const unit of this.units.values()) {
       if (unit.kind !== "monster" || !unit.isBoss || !unit.alive) continue;
       unit.attackTimer = Math.max(0, unit.attackTimer - dt);
+      if (!unit.bossEnraged && unit.hp / unit.stats.maxHp < 0.45) {
+        unit.bossEnraged = true;
+        unit.stats.attack *= 1.16;
+        unit.stats.speed *= 1.08;
+        unit.object.scale.multiplyScalar(1.08);
+        this.effects.ring(unit.position, 6.2, this.getBossColor(unit), 0.9);
+        this.shake(0.28);
+        this.announce(`${unit.name} 进入狂暴二阶段`, "info");
+      }
       const heroesInArena = Array.from(this.units.values())
         .filter((candidate) => candidate.kind === "hero" && candidate.alive && flatDistance(candidate.position, unit.spawn) <= 18)
         .sort((a, b) => flatDistance(unit.position, a.position) - flatDistance(unit.position, b.position));
@@ -830,52 +894,66 @@ export class GameEngine implements AiContext {
     const color = this.getBossColor(boss);
     if (boss.bossSkill === "cleave") {
       boss.abilityCooldowns.Q = 5.4;
-      const direction = flatDirection(boss.position, target.position);
-      this.ring(boss.position, 4.7, color, 0.5);
-      for (const victim of heroesInArena) {
-        if (flatDistance(boss.position, victim.position) <= 5.2 + victim.radius) {
-          this.damage(boss, victim, boss.stats.attack * 0.86, "physical", boss.position);
-          this.addStatus(victim, { type: "knockback", remaining: 0.32, value: 6.2, direction, sourceId: boss.id });
+      this.ring(boss.position, 5.1, color, 0.82);
+      this.schedule(0.42, () => {
+        if (!boss.alive) return;
+        const direction = flatDirection(boss.position, target.alive ? target.position : boss.spawn);
+        for (const victim of heroesInArena) {
+          if (victim.alive && flatDistance(boss.position, victim.position) <= 5.2 + victim.radius) {
+            this.damage(boss, victim, boss.stats.attack * 0.86, "physical", boss.position);
+            this.addStatus(victim, { type: "knockback", remaining: 0.32, value: 6.2, direction, sourceId: boss.id });
+          }
         }
-      }
+        this.shake(0.22);
+      });
       return;
     }
 
     if (boss.bossSkill === "riftStep") {
       boss.abilityCooldowns.Q = 4.3;
-      const from = boss.position.clone();
-      const direction = flatDirection(boss.position, target.position);
-      boss.position.copy(clampWorld(target.position.clone().addScaledVector(direction, -2.4)));
-      boss.object.position.copy(boss.position);
-      this.trail(from, "neutral");
-      this.trail(boss.position, "neutral");
-      this.ring(boss.position, 4.2, color, 0.48);
-      for (const victim of heroesInArena) {
-        if (flatDistance(boss.position, victim.position) <= 4.4 + victim.radius) {
-          this.damage(boss, victim, boss.stats.attack * 0.68, "magic", boss.position);
-          this.addStatus(victim, { type: "slow", remaining: 1.6, value: 0.34, sourceId: boss.id });
+      this.ring(target.position, 4.6, color, 0.72);
+      this.schedule(0.34, () => {
+        if (!boss.alive || !target.alive) return;
+        const from = boss.position.clone();
+        const direction = flatDirection(boss.position, target.position);
+        boss.position.copy(clampWorld(target.position.clone().addScaledVector(direction, -2.4)));
+        boss.object.position.copy(boss.position);
+        this.trail(from, "neutral");
+        this.trail(boss.position, "neutral");
+        this.ring(boss.position, 4.2, color, 0.48);
+        for (const victim of heroesInArena) {
+          if (victim.alive && flatDistance(boss.position, victim.position) <= 4.4 + victim.radius) {
+            this.damage(boss, victim, boss.stats.attack * 0.68, "magic", boss.position);
+            this.addStatus(victim, { type: "slow", remaining: 1.6, value: 0.34, sourceId: boss.id });
+          }
         }
-      }
+        this.shake(0.18);
+      });
       return;
     }
 
     boss.abilityCooldowns.Q = 6.3;
-    const shield = 420;
-    boss.shield = Math.max(boss.shield, shield);
-    this.addStatus(boss, { type: "shield", remaining: 4.2, value: shield, sourceId: boss.id });
-    this.addStatus(boss, { type: "damageReduction", remaining: 3.6, value: 0.28, sourceId: boss.id });
-    this.ring(boss.position, 5.8, color, 0.58);
-    for (const victim of heroesInArena) {
-      if (flatDistance(boss.position, victim.position) <= 5.9 + victim.radius) {
-        this.damage(boss, victim, boss.stats.attack * 0.54, "magic", boss.position);
-        this.addStatus(victim, { type: "stun", remaining: 0.62, value: 1, sourceId: boss.id });
+    this.ring(boss.position, 6.1, color, 0.9);
+    this.schedule(0.46, () => {
+      if (!boss.alive) return;
+      const shield = 420;
+      boss.shield = Math.max(boss.shield, shield);
+      this.addStatus(boss, { type: "shield", remaining: 4.2, value: shield, sourceId: boss.id });
+      this.addStatus(boss, { type: "damageReduction", remaining: 3.6, value: 0.28, sourceId: boss.id });
+      this.ring(boss.position, 5.8, color, 0.58);
+      for (const victim of heroesInArena) {
+        if (victim.alive && flatDistance(boss.position, victim.position) <= 5.9 + victim.radius) {
+          this.damage(boss, victim, boss.stats.attack * 0.54, "magic", boss.position);
+          this.addStatus(victim, { type: "stun", remaining: 0.62, value: 1, sourceId: boss.id });
+        }
       }
-    }
+      this.shake(0.25);
+    });
   }
 
   private updateVisuals(dt: number): void {
     for (const unit of this.units.values()) {
-      unit.object.visible = (unit.alive || unit.kind === "hero") && !this.isHiddenByBrush(unit);
+      unit.object.visible = (unit.alive || unit.kind === "hero") && !this.isHiddenByBrush(unit) && !this.isHiddenByVision(unit);
       if (unit.alive) {
         unit.object.position.copy(unit.position);
         if (unit.kind === "hero") animateHeroModel(unit.object, this.time, unit.velocity.length() > 0.1 ? 1.3 : 0.85);
@@ -946,6 +1024,29 @@ export class GameEngine implements AiContext {
     return flatDistance(this.player.position, unit.position) > 6.6;
   }
 
+  private canPlayerSee(unit: GameUnit): boolean {
+    if (!this.settings.fogOfWar) return true;
+    if (!this.player || unit.team !== "enemy") return true;
+    const visionSources = Array.from(this.units.values()).filter(
+      (candidate) => candidate.alive && candidate.team === "ally" && (candidate.kind === "hero" || candidate.kind === "tower" || candidate.kind === "base")
+    );
+    return visionSources.some((source) => {
+      const radius = source.isPlayer ? 17 : source.kind === "hero" ? 13 : source.kind === "tower" ? 12 : 15;
+      return flatDistance(source.position, unit.position) <= radius + unit.radius;
+    });
+  }
+
+  private isHiddenByVision(unit: GameUnit): boolean {
+    if (!this.settings.fogOfWar || unit.team !== "enemy" || !unit.alive) return false;
+    if (unit.kind !== "hero" && unit.kind !== "minion") return false;
+    return !this.canPlayerSee(unit);
+  }
+
+  private shake(amount: number): void {
+    if (!this.settings.screenShake) return;
+    this.screenShake = Math.min(0.9, Math.max(this.screenShake, amount));
+  }
+
   private updateCamera(dt: number): void {
     if (!this.player) return;
     this.cameraDistance += (this.desiredCameraDistance - this.cameraDistance) * Math.min(1, dt * 8);
@@ -966,6 +1067,11 @@ export class GameEngine implements AiContext {
                 .add(new THREE.Vector3(0, this.cameraDistance * 0.34, 0));
     const targetPosition = lookAt.clone().add(offset);
     damp(this.camera.position, targetPosition, 6, dt);
+    if (this.screenShake > 0 && this.settings.screenShake) {
+      this.camera.position.x += (Math.random() - 0.5) * this.screenShake;
+      this.camera.position.y += (Math.random() - 0.5) * this.screenShake * 0.42;
+      this.camera.position.z += (Math.random() - 0.5) * this.screenShake;
+    }
     this.camera.lookAt(lookAt);
   }
 
@@ -1012,8 +1118,38 @@ export class GameEngine implements AiContext {
       maxCooldown: Math.max(0.1, this.getAbilityCooldown(player, ability)),
       ready: player.alive && player.abilityCooldowns[ability.key] <= 0,
       name: ability.shortName,
-      icon: ability.icon
+      icon: ability.icon,
+      equipped: Boolean(this.equippedAbilities[ability.key])
     }));
+    const bossStatus = bossLaneConfigs.map((config) => {
+      const boss = Array.from(this.units.values()).find((unit) => unit.isBoss && unit.alive && unit.laneIndex === config.laneIndex);
+      return {
+        laneIndex: config.laneIndex,
+        laneName: config.laneName,
+        name: boss?.name ?? `${config.laneName} BOSS`,
+        buff: boss?.bossBuff ?? "power",
+        color: boss ? this.getBossColor(boss) : teamColor.neutral,
+        alive: Boolean(boss),
+        hp: boss?.hp ?? 0,
+        maxHp: boss?.stats.maxHp ?? 1,
+        respawn: boss ? 0 : Math.max(0, this.bossRespawns.get(config.laneIndex) ?? 0),
+        x: boss?.position.x ?? 0,
+        z: boss?.position.z ?? config.z
+      };
+    });
+    const buffMap = new Map<BossBuffType, number>();
+    for (const status of player.statuses) {
+      const type =
+        status.sourceId === "boss-power" || status.type === "attackBoost"
+          ? "power"
+          : status.sourceId === "boss-haste"
+            ? "haste"
+            : status.sourceId === "boss-guard"
+              ? "guard"
+              : undefined;
+      if (!type) continue;
+      buffMap.set(type, Math.max(buffMap.get(type) ?? 0, status.remaining));
+    }
     this.onHud({
       playerHp: player.hp,
       playerMaxHp: player.stats.maxHp,
@@ -1031,6 +1167,15 @@ export class GameEngine implements AiContext {
       respawnTimer: player.alive ? 0 : Math.max(0, player.respawnTimer),
       skills,
       announcements: [...this.announcements],
+      bossKills: { ...this.bossKills },
+      bossStatus,
+      buffs: Array.from(buffMap.entries()).map(([type, remaining]) => ({
+        id: type,
+        type,
+        name: bossBuffName[type],
+        remaining,
+        color: bossBuffColor[type]
+      })),
       minimapUnits: Array.from(this.units.values()).map((unit) => ({
         id: unit.id,
         team: unit.team,
@@ -1039,6 +1184,7 @@ export class GameEngine implements AiContext {
         x: unit.position.x,
         z: unit.position.z,
         alive: unit.alive,
+        visible: !this.isHiddenByBrush(unit) && !this.isHiddenByVision(unit),
         isPlayer: unit.isPlayer,
         isBoss: unit.isBoss
       }))
@@ -1060,6 +1206,11 @@ export class GameEngine implements AiContext {
     this.effects.burst(this.player.position.clone().add(new THREE.Vector3(0, 1.4, 0)), outcome === "victory" ? "ally" : "enemy", 36, 1.7);
     this.announce(outcome === "victory" ? "星核已稳定，胜利！" : "己方星核崩解，失败", outcome);
     const settlementGold = Math.round(this.player.gold + (outcome === "victory" ? 850 : 360) + Math.min(650, this.gameTime * 2.5));
+    const heroesInMatch = this.getScoreboardUnits();
+    const allyDamage = heroesInMatch.filter((unit) => unit.team === "ally").reduce((total, unit) => total + unit.damageDealt, 0);
+    const mvp = heroesInMatch
+      .slice()
+      .sort((a, b) => b.kills * 520 + b.damageDealt + (b.isPlayer ? this.playerBossKills * 680 : 0) - (a.kills * 520 + a.damageDealt + (a.isPlayer ? this.playerBossKills * 680 : 0)))[0];
     setTimeout(() => {
       this.onFinish({
         outcome,
@@ -1070,7 +1221,11 @@ export class GameEngine implements AiContext {
         damageTaken: Math.round(this.player.damageTaken),
         gold: settlementGold,
         duration: this.gameTime,
-        finishedAt: new Date().toISOString()
+        finishedAt: new Date().toISOString(),
+        bossKills: this.playerBossKills,
+        mvp: mvp?.name,
+        damageShare: allyDamage > 0 ? this.player.damageDealt / allyDamage : 0,
+        damagePerMinute: this.gameTime > 0 ? this.player.damageDealt / (this.gameTime / 60) : 0
       });
     }, 850);
   }
@@ -1083,8 +1238,10 @@ export class GameEngine implements AiContext {
     target.shield = 0;
     target.deaths += 1;
     target.respawnTimer = target.kind === "hero" ? 7 + target.level * 1.1 : target.kind === "monster" ? -1.2 : target.kind === "minion" ? -1.2 : 0;
+    if (target.isBoss && target.laneIndex != null) this.bossRespawns.set(target.laneIndex, bossSpawnInterval);
     this.effects.burst(target.position.clone().add(new THREE.Vector3(0, 0.8, 0)), target.team, target.kind === "hero" ? 26 : target.kind === "monster" ? 20 : 12, target.kind === "hero" ? 1.25 : target.kind === "monster" ? 1.05 : 0.75);
     this.audio.play(target.kind === "hero" ? "death" : "hit");
+    this.shake(target.kind === "base" ? 0.6 : target.isBoss ? 0.42 : target.kind === "hero" ? 0.32 : 0.12);
 
     if (source?.kind === "hero") {
       source.kills += 1;
@@ -1092,8 +1249,13 @@ export class GameEngine implements AiContext {
       const xpReward = target.kind === "hero" ? 155 : target.kind === "tower" ? 120 : target.isBoss ? 260 : target.kind === "monster" ? 100 : 38;
       source.gold += goldReward;
       source.xp += xpReward;
-      if (target.isBoss) this.applyBossBuff(source, target.bossBuff);
-      if (source.isPlayer) this.effects.damageText(target.position, xpReward, "xp");
+      if (target.isBoss) {
+        if (source.team === "ally") this.bossKills.ally += 1;
+        if (source.team === "enemy") this.bossKills.enemy += 1;
+        if (source.isPlayer) this.playerBossKills += 1;
+        this.applyBossBuff(source, target.bossBuff);
+      }
+      if (source.isPlayer && this.settings.damageNumbers) this.effects.damageText(target.position, xpReward, "xp");
       while (source.xp >= xpNeed(source.level)) {
         source.xp -= xpNeed(source.level);
         source.level += 1;
@@ -1125,18 +1287,18 @@ export class GameEngine implements AiContext {
   private applyBossBuff(unit: GameUnit, buff: BossBuffType = "power"): void {
     const name = bossBuffName[buff];
     if (buff === "power") {
-      unit.stats.attack += 22 + Math.ceil(unit.level * 2);
+      this.addStatus(unit, { type: "attackBoost", remaining: 45, value: 0.28, sourceId: "boss-power" });
       this.effects.ring(unit.position, 2.9, "#ff8b56", 0.95);
-      this.effects.damageText(unit.position, 22, "xp");
+      if (unit.isPlayer && this.settings.damageNumbers) this.effects.damageText(unit.position, 28, "xp");
     } else if (buff === "haste") {
-      this.addStatus(unit, { type: "speed", remaining: 45, value: 0.24, sourceId: unit.id });
+      this.addStatus(unit, { type: "speed", remaining: 45, value: 0.24, sourceId: "boss-haste" });
       unit.attackTimer = Math.max(0, unit.attackTimer - 0.35);
       this.effects.ring(unit.position, 3.1, "#f8d26b", 0.95);
     } else {
       const shield = 360 + unit.level * 35;
       unit.shield = Math.max(unit.shield, shield);
-      this.addStatus(unit, { type: "shield", remaining: 45, value: shield, sourceId: unit.id });
-      this.addStatus(unit, { type: "damageReduction", remaining: 25, value: 0.18, sourceId: unit.id });
+      this.addStatus(unit, { type: "shield", remaining: 45, value: shield, sourceId: "boss-guard" });
+      this.addStatus(unit, { type: "damageReduction", remaining: 25, value: 0.18, sourceId: "boss-guard" });
       this.effects.ring(unit.position, 3.2, "#5beeff", 1);
     }
     this.effects.burst(unit.position.clone().add(new THREE.Vector3(0, 1.4, 0)), unit.team, 18, 1);
@@ -1369,7 +1531,7 @@ export class GameEngine implements AiContext {
 
   private findUnitAt(point: THREE.Vector3, team?: Team): GameUnit | undefined {
     return Array.from(this.units.values())
-      .filter((unit) => unit.alive && !this.isHiddenByBrush(unit) && (!team || unit.team === team) && flatDistance(point, unit.position) <= unit.radius + 1.1)
+      .filter((unit) => unit.alive && !this.isHiddenByBrush(unit) && !this.isHiddenByVision(unit) && (!team || unit.team === team) && flatDistance(point, unit.position) <= unit.radius + 1.1)
       .sort((a, b) => flatDistance(point, a.position) - flatDistance(point, b.position))[0];
   }
 
@@ -1390,7 +1552,7 @@ export class GameEngine implements AiContext {
       current?.alive && current.team === "enemy"
         ? current
         : this.getEnemies(this.player)
-            .filter((unit) => unit.alive && !this.isHiddenByBrush(unit))
+            .filter((unit) => unit.alive && !this.isHiddenByBrush(unit) && !this.isHiddenByVision(unit))
             .sort((a, b) => flatDistance(this.player.position, a.position) - flatDistance(this.player.position, b.position))[0];
     if (!target) return;
     this.player.targetId = target.id;
@@ -1403,7 +1565,7 @@ export class GameEngine implements AiContext {
       this.player.gold -= 60;
       const heal = this.player.stats.maxHp * 0.22;
       this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + heal);
-      this.effects.damageText(this.player.position, heal, "heal");
+      if (this.settings.damageNumbers) this.effects.damageText(this.player.position, heal, "heal");
       this.effects.ring(this.player.position, 1.7, "#72ffbc", 0.45);
     }
     if (type === "guard" && this.player.gold >= 80) {
@@ -1486,6 +1648,11 @@ export class GameEngine implements AiContext {
     return towers.find((unit) => unit.laneIndex === laneIndex) ?? towers[0];
   }
 
+  findBoss(laneIndex?: number): GameUnit | undefined {
+    const bosses = Array.from(this.units.values()).filter((unit) => unit.isBoss && unit.alive);
+    return bosses.find((unit) => unit.laneIndex === laneIndex) ?? bosses[0];
+  }
+
   moveToward(unit: GameUnit, point: THREE.Vector3, dt: number): void {
     if (!unit.alive || unit.statuses.some((status) => status.type === "stun")) return;
     this.moveAlong(unit, flatDirection(unit.position, point), dt);
@@ -1493,7 +1660,7 @@ export class GameEngine implements AiContext {
 
   tryBasicAttack(source: GameUnit, target: GameUnit): boolean {
     if (!source.alive || !target.alive || source.attackTimer > 0) return false;
-    if (source.isPlayer && this.isHiddenByBrush(target)) return false;
+    if (source.isPlayer && (this.isHiddenByBrush(target) || this.isHiddenByVision(target))) return false;
     const starBlade = source.statuses.find((status) => status.type === "starBlade");
     const range = source.stats.attackRange + (starBlade ? 1.8 : 0);
     if (flatDistance(source.position, target.position) > range + target.radius) return false;
@@ -1508,6 +1675,8 @@ export class GameEngine implements AiContext {
       if (combo > 1.1) this.effects.ring(target.position, 1.1, teamColor[source.team], 0.28);
     }
     damage *= this.getBasicAttackMultiplier(source);
+    const attackBoost = source.statuses.filter((status) => status.type === "attackBoost").reduce((total, status) => total + status.value, 0);
+    damage *= 1 + attackBoost;
     if (starBlade) damage += starBlade.value;
 
     const ranged = source.stats.attackRange > 3 || source.kind === "tower" || Boolean(starBlade);
@@ -1543,9 +1712,10 @@ export class GameEngine implements AiContext {
     if (target.kind === "hero" && source.kind === "hero") {
       this.towerAggro[target.team] = { sourceId: source.id, timer: 4 };
     }
-    this.effects.damageText(target.position, result.final);
+    if (this.settings.damageNumbers) this.effects.damageText(target.position, result.final);
     this.effects.burst(target.position.clone().add(new THREE.Vector3(0, 1, 0)), source.team, result.killed ? 18 : 5, result.killed ? 1 : 0.45);
     this.audio.play("hit");
+    if (source.isPlayer || target.isPlayer || target.isBoss) this.shake(result.killed ? 0.28 : 0.08);
     if (result.killed) this.handleDeath(target, source);
   }
 

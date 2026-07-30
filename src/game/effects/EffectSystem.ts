@@ -24,7 +24,8 @@ export class EffectSystem {
   constructor(
     private scene: THREE.Scene,
     private overlay: HTMLElement,
-    private camera: THREE.Camera
+    private camera: THREE.Camera,
+    private particleCap = 160
   ) {}
 
   update(dt: number): void {
@@ -67,8 +68,10 @@ export class EffectSystem {
   }
 
   burst(position: THREE.Vector3, team: Team, count = 14, scale = 1): void {
+    if (this.particles.length >= this.particleCap) return;
+    const spawnCount = Math.min(count, this.particleCap - this.particles.length);
     const color = new THREE.Color(teamColors[team]);
-    for (let i = 0; i < count; i += 1) {
+    for (let i = 0; i < spawnCount; i += 1) {
       const geometry = new THREE.TetrahedronGeometry(0.06 + Math.random() * 0.06 * scale, 0);
       const material = new THREE.MeshBasicMaterial({
         color,
@@ -95,6 +98,7 @@ export class EffectSystem {
 
   ring(position: THREE.Vector3, radius: number, color: string, duration = 0.55): THREE.Group {
     const group = new THREE.Group();
+    if (this.particles.length >= this.particleCap) return group;
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(radius * 0.82, radius, 64),
       new THREE.MeshBasicMaterial({
@@ -122,6 +126,7 @@ export class EffectSystem {
   }
 
   trail(position: THREE.Vector3, team: Team): void {
+    if (this.particles.length >= this.particleCap) return;
     const color = teamColors[team];
     const object = new THREE.Mesh(
       new THREE.CircleGeometry(0.22 + Math.random() * 0.13, 16),

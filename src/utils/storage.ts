@@ -2,6 +2,7 @@ import type { AbilityKey, GameSettings, HeroDefinition, MatchResult } from "../g
 
 const SETTINGS_KEY = "star-rift-settings";
 const RECORDS_KEY = "star-rift-records";
+const MASTERY_KEY = "star-rift-hero-mastery";
 const LAST_HERO_KEY = "star-rift-last-hero";
 const GACHA_KEY = "star-rift-skill-gacha-v1";
 const LEGACY_GACHA_KEY = "star-rift-gacha";
@@ -20,13 +21,18 @@ const validHeroIds = new Set([
   "yeguang",
   "huanyin",
   "xuanji",
-  "chixiao"
+  "chixiao",
+  "wuxiang"
 ]);
 
 export const defaultSettings: GameSettings = {
   quality: "high",
   audio: true,
   cameraDistance: 22,
+  funMode: false,
+  damageNumbers: true,
+  screenShake: true,
+  fogOfWar: true,
   tuning: {
     skillDamageMultiplier: 100,
     basicAttackMultiplier: 1,
@@ -43,6 +49,18 @@ export interface GachaSaveState {
   ultraPulled: boolean;
   equippedSkillCardIds: Partial<Record<AbilityKey, string>>;
 }
+
+export interface HeroMasteryStats {
+  games: number;
+  wins: number;
+  kills: number;
+  bossKills: number;
+  damageDealt: number;
+  gold: number;
+  minutes: number;
+}
+
+export type HeroMasteryState = Partial<Record<HeroDefinition["id"], HeroMasteryStats>>;
 
 export const defaultGachaState: GachaSaveState = {
   gold: 0,
@@ -87,6 +105,38 @@ export function addRecord(record: MatchResult): MatchResult[] {
   const records = [record, ...loadRecords()].slice(0, 12);
   localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
   return records;
+}
+
+export function loadMastery(): HeroMasteryState {
+  try {
+    return JSON.parse(localStorage.getItem(MASTERY_KEY) || "{}") as HeroMasteryState;
+  } catch {
+    return {};
+  }
+}
+
+export function addMasteryResult(record: MatchResult): HeroMasteryState {
+  const mastery = loadMastery();
+  const current = mastery[record.heroId] ?? {
+    games: 0,
+    wins: 0,
+    kills: 0,
+    bossKills: 0,
+    damageDealt: 0,
+    gold: 0,
+    minutes: 0
+  };
+  mastery[record.heroId] = {
+    games: current.games + 1,
+    wins: current.wins + (record.outcome === "victory" ? 1 : 0),
+    kills: current.kills + record.kills,
+    bossKills: current.bossKills + (record.bossKills ?? 0),
+    damageDealt: current.damageDealt + record.damageDealt,
+    gold: current.gold + record.gold,
+    minutes: current.minutes + record.duration / 60
+  };
+  localStorage.setItem(MASTERY_KEY, JSON.stringify(mastery));
+  return mastery;
 }
 
 export function loadLastHero(fallback: HeroDefinition["id"]): HeroDefinition["id"] {

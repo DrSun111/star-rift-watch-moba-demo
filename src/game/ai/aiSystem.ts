@@ -13,6 +13,7 @@ export interface AiContext {
   tryCastAbility(source: GameUnit, ability: AbilityDefinition, point: THREE.Vector3): boolean;
   findBase(team: GameUnit["team"]): GameUnit | undefined;
   findTower(team: GameUnit["team"], laneIndex?: number): GameUnit | undefined;
+  findBoss(laneIndex?: number): GameUnit | undefined;
 }
 
 function closest(unit: GameUnit, candidates: GameUnit[], maxRange = Infinity): GameUnit | undefined {
@@ -92,6 +93,7 @@ export function updateEnemyHeroAi(ctx: AiContext, unit: GameUnit, dt: number): v
   const ownTower = ctx.findTower(unit.team, unit.laneIndex);
   const enemies = ctx.getEnemies(unit);
   const nearbyThreat = closest(unit, enemies.filter((enemy) => enemy.kind === "hero" || enemy.kind === "minion" || enemy.kind === "monster"), 9);
+  const laneBoss = ctx.findBoss(unit.laneIndex);
 
   if (hpRate < 0.32 && (ownBase || ownTower)) {
     unit.aiState = "retreating";
@@ -100,6 +102,24 @@ export function updateEnemyHeroAi(ctx: AiContext, unit: GameUnit, dt: number): v
       const def = heroById[unit.heroId];
       const escape = def.abilities.find((ability) => ability.key === "E" || ability.key === "W");
       if (escape) ctx.tryCastAbility(unit, escape, ownBase?.position ?? unit.spawn);
+    }
+    return;
+  }
+
+  if (laneBoss && hpRate > 0.58 && (!nearbyThreat || nearbyThreat.kind === "monster" || flatDistance(unit.position, nearbyThreat.position) > 6.5)) {
+    unit.targetId = laneBoss.id;
+    unit.aiState = "searching";
+    const def = heroById[unit.heroId];
+    for (const ability of def.abilities.filter((item) => item.key === "Q" || item.key === "W")) {
+      const distance = flatDistance(unit.position, laneBoss.position);
+      if (distance <= ability.range + ability.radius && ctx.tryCastAbility(unit, ability, laneBoss.position)) {
+        unit.aiState = "casting";
+        return;
+      }
+    }
+    if (!ctx.tryBasicAttack(unit, laneBoss)) {
+      const approachPoint = laneBoss.position.clone().addScaledVector(flatDirection(laneBoss.position, unit.position), Math.max(1.2, unit.stats.attackRange * 0.65));
+      ctx.moveToward(unit, approachPoint, dt);
     }
     return;
   }
