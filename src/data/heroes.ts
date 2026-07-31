@@ -76,6 +76,74 @@ const wuxiangAbilities: AbilityDefinition[] = [
   }
 ];
 
+const miaozongAbilities: AbilityDefinition[] = [
+  {
+    key: "Q",
+    name: "总裁隐帷",
+    shortName: "隐帷",
+    description: "进入不可见状态，对方英雄、防御塔和小兵都无法锁定缪总。离谱程度：你看不见我，但我一直在。",
+    cooldown: 5,
+    range: 0,
+    radius: 0,
+    damage: 0,
+    damageType: "true",
+    targeting: "self",
+    icon: "veil"
+  },
+  {
+    key: "W",
+    name: "删除席位",
+    shortName: "删除",
+    description: "点名一个敌方英雄，将其从战场删除 20 秒，对面临时只剩四个人。",
+    cooldown: 12,
+    range: 28,
+    radius: 2.4,
+    damage: 0,
+    damageType: "true",
+    targeting: "area",
+    icon: "erase"
+  },
+  {
+    key: "E",
+    name: "瞬息咽气",
+    shortName: "咽气",
+    description: "选择一个敌方英雄，直接让其瞬间倒下。没有过程，只有结果。",
+    cooldown: 9,
+    range: 24,
+    radius: 2.1,
+    damage: 999999,
+    damageType: "true",
+    targeting: "area",
+    icon: "fatal"
+  },
+  {
+    key: "R",
+    name: "塔权敕令",
+    shortName: "夺塔",
+    description: "将目标敌方防御塔直接变成我方防御塔，并恢复大量生命值。",
+    cooldown: 10,
+    range: 44,
+    radius: 4,
+    damage: 0,
+    damageType: "true",
+    targeting: "area",
+    icon: "convert"
+  },
+  {
+    key: "T",
+    name: "万塔复原",
+    shortName: "修塔",
+    description: "修复己方所有防御塔，也修复已经被缪总转化到敌方阵地的我方塔。",
+    cooldown: 8,
+    range: 0,
+    radius: 120,
+    damage: 0,
+    damageType: "true",
+    targeting: "self",
+    icon: "repair"
+  }
+];
+
 const skillNames: Record<HeroId, Array<[string, string, string]>> = {
   lingxiao: [
     ["星痕突斩", "突斩", "向目标方向突进，对路径末端附近敌人造成物理伤害。"],
@@ -167,6 +235,13 @@ const skillNames: Record<HeroId, Array<[string, string, string]>> = {
     ["天隙折跃", "折跃", "向目标方向瞬移，并在起点和终点留下金色轨迹。"],
     ["终末天判", "天判", "降下全域裁决，对全场敌对与中立单位造成重击，不伤害能量水晶。"]
   ],
+  miaozong: [
+    ["总裁隐帷", "隐帷", "进入不可见状态，对方单位无法锁定缪总。"],
+    ["删除席位", "删除", "点名一个敌方英雄，将其从战场删除 20 秒。"],
+    ["瞬息咽气", "咽气", "让一个敌方英雄瞬间倒下。"],
+    ["塔权敕令", "夺塔", "将敌方防御塔直接转为我方防御塔。"],
+    ["万塔复原", "修塔", "修复己方所有防御塔和已转化防御塔。"]
+  ],
   chixiao: [
     ["赤霄重撞", "重撞", "携赤霄巨盾向前撞击。"],
     ["赤晶壁垒", "壁垒", "赤晶装甲展开，获得护盾和减伤。"],
@@ -177,6 +252,7 @@ const skillNames: Record<HeroId, Array<[string, string, string]>> = {
 
 function buildAbilities(id: HeroId, archetype: HeroArchetype): AbilityDefinition[] {
   if (id === "wuxiang") return wuxiangAbilities;
+  if (id === "miaozong") return miaozongAbilities;
   return abilityText[archetype].map((ability, index) => {
     const [name, shortName, description] = skillNames[id][index];
     return { ...ability, name, shortName, description };
@@ -395,6 +471,19 @@ export const heroes: HeroDefinition[] = [
     palette: { primary: "#ffd76a", secondary: "#4a3720", accent: "#fff3b0", metal: "#caa85e" },
     stats: { maxHp: 9999, attack: 188, defense: 999, speed: 6.2, attackRange: 8.8, attackCooldown: 0.68, regen: 999 },
     radar: { damage: 100, durability: 100, control: 86, mobility: 92, utility: 100 }
+  }),
+  hero({
+    id: "miaozong",
+    name: "缪总",
+    title: "本人化身",
+    role: "法师",
+    archetype: "mage",
+    difficulty: 1,
+    tagline: "规则在他面前不是边界，只是按钮。",
+    lore: "缪总不是守望者名单里的角色，而是玩家本人投射到阿斯特拉裂隙中的至高化身。星核、塔权、视野、敌方席位都可以被他当作界面选项重写。",
+    palette: { primary: "#ffffff", secondary: "#111827", accent: "#f8d26b", metal: "#d7f4ff" },
+    stats: { maxHp: 88888, attack: 888, defense: 888, speed: 8.8, attackRange: 12, attackCooldown: 0.42, regen: 888 },
+    radar: { damage: 100, durability: 100, control: 100, mobility: 100, utility: 100 }
   })
 ];
 

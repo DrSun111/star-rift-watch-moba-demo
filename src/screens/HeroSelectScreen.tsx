@@ -9,6 +9,7 @@ import { SkillIcon } from "../ui/SkillIcon";
 
 const filters = ["全部", "战士", "法师", "坦克"] as const;
 const tuningPresets = [0, 1, 10, 100, 1000];
+const funHeroIds = new Set<HeroDefinition["id"]>(["wuxiang", "miaozong"]);
 const defaultTuning: GameSettings["tuning"] = {
   skillDamageMultiplier: 100,
   basicAttackMultiplier: 1,
@@ -20,7 +21,7 @@ const tuningControls: Array<{
   label: string;
   hint: string;
 }> = [
-  { key: "skillDamageMultiplier", label: "技能伤害", hint: "Q/W/E/R 与持续区域伤害" },
+  { key: "skillDamageMultiplier", label: "技能伤害", hint: "Q/W/E/R/T 与持续区域伤害" },
   { key: "basicAttackMultiplier", label: "普攻伤害", hint: "普通攻击与三段连击" },
   { key: "cooldownMultiplier", label: "冷却时间", hint: "0x 为无冷却，数值越大越久" },
   { key: "healthMultiplier", label: "血量", hint: "只影响玩家出战英雄" }
@@ -37,7 +38,7 @@ function RoleIcon({ role }: { role: HeroDefinition["role"] }) {
 }
 
 function buildPreviewDraft(selected: HeroDefinition) {
-  const remaining = heroes.filter((hero) => hero.id !== selected.id && hero.id !== "wuxiang");
+  const remaining = heroes.filter((hero) => hero.id !== selected.id && !funHeroIds.has(hero.id));
   return {
     allies: [selected, ...remaining.slice(0, 4)],
     enemies: remaining.slice(4, 9)
@@ -48,8 +49,8 @@ export function HeroSelectScreen() {
   const { selectedHeroId, selectHero, startBattle, setScreen, settings, updateSettings } = useAppStore();
   const [filter, setFilter] = useState<(typeof filters)[number]>("全部");
   const [launching, setLaunching] = useState(false);
-  const standardHeroes = useMemo(() => heroes.filter((hero) => hero.id !== "wuxiang"), []);
-  const selected = heroes.find((hero) => hero.id === selectedHeroId && (settings.funMode || hero.id !== "wuxiang")) ?? standardHeroes[0];
+  const standardHeroes = useMemo(() => heroes.filter((hero) => !funHeroIds.has(hero.id)), []);
+  const selected = heroes.find((hero) => hero.id === selectedHeroId && (settings.funMode || !funHeroIds.has(hero.id))) ?? standardHeroes[0];
   const visibleHeroes = useMemo(() => heroes.filter((hero) => filter === "全部" || hero.role === filter), [filter]);
   const draft = useMemo(() => buildPreviewDraft(selected), [selected]);
 
@@ -86,7 +87,7 @@ export function HeroSelectScreen() {
           </div>
           <div className="hero-card-list">
             {visibleHeroes.map((hero) => {
-              const locked = hero.id === "wuxiang" && !settings.funMode;
+              const locked = funHeroIds.has(hero.id) && !settings.funMode;
               return (
                 <button
                   key={hero.id}
@@ -120,7 +121,7 @@ export function HeroSelectScreen() {
               </button>
             </div>
             <label className="setting-row compact-toggle">
-              <span>娱乐模式：解锁无敌英雄</span>
+              <span>娱乐模式：解锁无敌与化身英雄</span>
               <input type="checkbox" checked={settings.funMode} onChange={(event) => updateSettings({ funMode: event.target.checked })} />
             </label>
             {tuningControls.map((control) => {

@@ -203,9 +203,95 @@ function createWuxiang(def: HeroDefinition, team: Team): THREE.Group {
   return group;
 }
 
+function createMiaozong(def: HeroDefinition, team: Team): THREE.Group {
+  const group = new THREE.Group();
+  const primary = team === "enemy" ? "#ffd36f" : def.palette.primary;
+  const obsidian = "#101827";
+  const gold = def.palette.accent;
+  const cyan = "#9ef8ff";
+  const parts: THREE.Object3D[] = [];
+  const orbitals: THREE.Object3D[] = [];
+
+  addMesh(group, new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.76, 1.28, 10), standard(obsidian, cyan, 0.28, 0.82)), [0, 1.22, 0]);
+  addMesh(group, new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.26, 0.56), standard("#f7fbff", cyan, 0.24, 0.68)), [0, 1.76, -0.02]);
+  addMesh(group, new THREE.Mesh(new THREE.IcosahedronGeometry(0.52, 1), standard("#f4fbff", cyan, 0.2, 0.56)), [0, 1.92, 0]);
+  addMesh(group, new THREE.Mesh(new THREE.SphereGeometry(0.34, 24, 16), standard("#f3d8bf", "#000000", 0.56, 0.12)), [0, 2.46, 0]);
+  addMesh(group, new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.34, 0.18, 8), standard(gold, gold, 0.22, 0.82)), [0, 2.78, 0]);
+  addMesh(group, new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.026, 10, 64), glow(gold, 0.86)), [0, 2.9, 0], [Math.PI / 2, 0, 0]);
+  addMesh(group, new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.018, 10, 80), glow(cyan, 0.56)), [0, 2.48, 0], [Math.PI / 2.3, 0.2, 0]);
+
+  const cape = makeCape("#111827", gold);
+  cape.scale.set(1.28, 1.42, 1);
+  cape.position.set(0, 1.18, 0.38);
+  cape.rotation.x = -0.32;
+  group.add(cape);
+  parts.push(cape);
+
+  for (const side of [-1, 1]) {
+    const arm = addMesh(group, new THREE.Mesh(new THREE.CapsuleGeometry(0.15, 0.76, 6, 12), standard("#f3f8ff", cyan, 0.24, 0.7)), [side * 0.67, 1.42, 0.03], [0.05, 0, side * 0.26]);
+    const glove = addMesh(group, new THREE.Mesh(new THREE.DodecahedronGeometry(0.2, 0), standard(gold, gold, 0.24, 0.7)), [side * 0.84, 0.95, 0.06]);
+    const leg = addMesh(group, new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.78, 6, 12), standard("#141f31", cyan, 0.35, 0.62)), [side * 0.25, 0.58, 0], [0, 0, side * 0.08]);
+    const wingRoot = new THREE.Group();
+    wingRoot.position.set(side * 0.58, 1.72, 0.22);
+    for (let i = 0; i < 4; i += 1) {
+      const feather = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.84 - i * 0.1, 0.035),
+        glow(i % 2 ? cyan : gold, 0.42 + i * 0.08)
+      );
+      feather.position.set(side * (0.2 + i * 0.18), -0.1 - i * 0.04, 0);
+      feather.rotation.z = side * (0.42 + i * 0.12);
+      feather.castShadow = false;
+      wingRoot.add(feather);
+      parts.push(feather);
+    }
+    group.add(wingRoot);
+    parts.push(arm, glove, leg, wingRoot);
+  }
+
+  for (let i = 0; i < 8; i += 1) {
+    const angle = (i / 8) * Math.PI * 2;
+    const radius = i % 2 ? 1.34 : 1.08;
+    const shard = new THREE.Mesh(
+      i % 3 === 0 ? new THREE.OctahedronGeometry(0.16, 1) : new THREE.TetrahedronGeometry(0.17, 0),
+      standard(i % 2 ? gold : cyan, i % 2 ? gold : cyan, 0.18, 0.62)
+    );
+    shard.position.set(Math.cos(angle) * radius, 1.9 + Math.sin(angle * 2) * 0.18, Math.sin(angle) * radius);
+    shard.rotation.set(0.44, angle, 0.28);
+    shard.castShadow = true;
+    group.add(shard);
+    orbitals.push(shard);
+  }
+
+  const authorityRing = new THREE.Group();
+  for (const [index, radius] of [0.88, 1.18, 1.55].entries()) {
+    addMesh(authorityRing, new THREE.Mesh(new THREE.TorusGeometry(radius, 0.018 + index * 0.004, 10, 96), glow(index === 1 ? gold : cyan, index === 1 ? 0.62 : 0.42)), [0, 0, 0], [Math.PI / 2 + index * 0.18, index * 0.16, 0]);
+  }
+  authorityRing.position.set(0, 1.88, 0);
+  group.add(authorityRing);
+  orbitals.push(authorityRing);
+
+  for (let i = 0; i < 6; i += 1) {
+    const angle = (i / 6) * Math.PI * 2;
+    const sigil = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.22), glow(i % 2 ? gold : cyan, 0.58));
+    sigil.position.set(Math.cos(angle) * 0.92, 0.22, Math.sin(angle) * 0.92);
+    sigil.rotation.set(-Math.PI / 2, 0, angle);
+    group.add(sigil);
+    orbitals.push(sigil);
+  }
+
+  const ring = addMesh(group, new THREE.Mesh(new THREE.TorusGeometry(0.98, 0.032, 12, 72), glow(gold, 0.78)), [0, 0.06, 0], [Math.PI / 2, 0, 0]);
+  ring.userData.pulse = true;
+  group.userData.parts = parts;
+  group.userData.orbitals = orbitals;
+  group.userData.heroId = def.id;
+  group.userData.invincible = true;
+  group.userData.avatar = true;
+  return group;
+}
+
 export function createHeroModel(heroId: HeroDefinition["id"], team: Team): THREE.Group {
   const def = heroById[heroId];
-  const model = heroId === "wuxiang" ? createWuxiang(def, team) : def.archetype === "warrior" ? createLingxiao(def, team) : def.archetype === "mage" ? createLiyue(def, team) : createZhongshan(def, team);
+  const model = heroId === "miaozong" ? createMiaozong(def, team) : heroId === "wuxiang" ? createWuxiang(def, team) : def.archetype === "warrior" ? createLingxiao(def, team) : def.archetype === "mage" ? createLiyue(def, team) : createZhongshan(def, team);
   const variant = Math.abs([...heroId].reduce((total, char) => total + char.charCodeAt(0), 0));
   const height = 0.94 + (variant % 7) * 0.025;
   const width = 0.94 + (variant % 5) * 0.018;
@@ -239,6 +325,11 @@ export function animateHeroModel(model: THREE.Group, time: number, speed = 1): v
     orb.rotation.y += 0.028;
     orb.position.y = 1.74 + Math.sin(time * 2.8) * 0.1;
   }
+  const orbitals = (model.userData.orbitals || []) as THREE.Object3D[];
+  orbitals.forEach((orbital, index) => {
+    orbital.rotation.y += 0.012 + index * 0.0015;
+    orbital.position.y += Math.sin(time * 2.4 + index) * 0.0009;
+  });
 }
 
 export function createMinionModel(team: Team): THREE.Group {
@@ -370,7 +461,7 @@ export function buildUnitFromHero(heroId: HeroDefinition["id"], team: Team, isPl
     position: spawn.clone(),
     velocity: new THREE.Vector3(),
     spawn: spawn.clone(),
-    radius: heroId === "wuxiang" ? 0.86 : def.archetype === "tank" ? 0.95 : 0.78,
+    radius: heroId === "miaozong" ? 0.92 : heroId === "wuxiang" ? 0.86 : def.archetype === "tank" ? 0.95 : 0.78,
     stats: { ...def.stats },
     hp: def.stats.maxHp,
     shield: 0,
@@ -382,7 +473,7 @@ export function buildUnitFromHero(heroId: HeroDefinition["id"], team: Team, isPl
     damageDealt: 0,
     damageTaken: 0,
     attackTimer: 0,
-    abilityCooldowns: { Q: 0, W: 0, E: 0, R: 0 },
+    abilityCooldowns: { Q: 0, W: 0, E: 0, R: 0, T: 0 },
     statuses: [],
     alive: true,
     respawnTimer: 0,
@@ -390,6 +481,6 @@ export function buildUnitFromHero(heroId: HeroDefinition["id"], team: Team, isPl
     basicCombo: 0,
     damageFlash: 0,
     isPlayer,
-    invulnerable: heroId === "wuxiang"
+    invulnerable: heroId === "wuxiang" || heroId === "miaozong"
   };
 }

@@ -61,7 +61,7 @@ interface DelayedAction {
   action: () => void;
 }
 
-const abilityKeys: AbilityKey[] = ["Q", "W", "E", "R"];
+const abilityKeys: AbilityKey[] = ["Q", "W", "E", "R", "T"];
 const xpNeed = (level: number) => 100 + Math.max(0, level - 1) * 40;
 const teamColor: Record<Team, string> = {
   ally: "#5beeff",
@@ -306,7 +306,7 @@ export class GameEngine implements AiContext {
         damageDealt: 0,
         damageTaken: 0,
         attackTimer: 0,
-        abilityCooldowns: { Q: 0, W: 0, E: 0, R: 0 },
+        abilityCooldowns: { Q: 0, W: 0, E: 0, R: 0, T: 0 },
         statuses: [],
         alive: true,
         respawnTimer: 0,
@@ -360,7 +360,7 @@ export class GameEngine implements AiContext {
 
   private spawnHeroes(): void {
     const selected = heroes.find((hero) => hero.id === this.heroId) ?? heroes[0];
-    const remaining = heroes.filter((hero) => hero.id !== selected.id && hero.id !== "wuxiang");
+    const remaining = heroes.filter((hero) => hero.id !== selected.id && hero.id !== "wuxiang" && hero.id !== "miaozong");
     const allyRoster = [selected, ...remaining.slice(0, 4)];
     const enemyRoster = remaining.slice(4, 9);
     const heroLanePattern = [1, 0, 2, 0, 2];
@@ -458,7 +458,7 @@ export class GameEngine implements AiContext {
             damageDealt: 0,
             damageTaken: 0,
             attackTimer: Math.random() * 0.5,
-            abilityCooldowns: { Q: 0, W: 0, E: 0, R: 0 },
+            abilityCooldowns: { Q: 0, W: 0, E: 0, R: 0, T: 0 },
             statuses: [],
             alive: true,
             respawnTimer: 0,
@@ -542,7 +542,7 @@ export class GameEngine implements AiContext {
       damageDealt: 0,
       damageTaken: 0,
       attackTimer: Math.random() * 0.5,
-      abilityCooldowns: { Q: 3, W: 0, E: 0, R: 0 },
+      abilityCooldowns: { Q: 3, W: 0, E: 0, R: 0, T: 0 },
       statuses: [],
       alive: true,
       respawnTimer: 0,
@@ -953,7 +953,8 @@ export class GameEngine implements AiContext {
 
   private updateVisuals(dt: number): void {
     for (const unit of this.units.values()) {
-      unit.object.visible = (unit.alive || unit.kind === "hero") && !this.isHiddenByBrush(unit) && !this.isHiddenByVision(unit);
+      const deleted = unit.statuses.some((status) => status.type === "deleted");
+      unit.object.visible = (unit.alive || unit.kind === "hero") && !deleted && !this.isHiddenByBrush(unit) && !this.isHiddenByVision(unit);
       if (unit.alive) {
         unit.object.position.copy(unit.position);
         if (unit.kind === "hero") animateHeroModel(unit.object, this.time, unit.velocity.length() > 0.1 ? 1.3 : 0.85);
@@ -967,6 +968,8 @@ export class GameEngine implements AiContext {
         const rate = clamp(unit.hp / unit.stats.maxHp, 0, 1);
         unit.barFill.scale.x = Math.max(0.001, rate);
         unit.barFill.position.x = -(1 - rate) * ((unit.barFill.geometry as THREE.PlaneGeometry).parameters.width || 1) * 0.5;
+        const material = unit.barFill.material;
+        if (material instanceof THREE.MeshBasicMaterial) material.color.set(teamColor[unit.team]);
         unit.barFill.parent?.lookAt(this.camera.position);
       }
 
@@ -1042,6 +1045,10 @@ export class GameEngine implements AiContext {
     return !this.canPlayerSee(unit);
   }
 
+  private isStealthedFrom(candidate: GameUnit, viewer: GameUnit): boolean {
+    return candidate.kind === "hero" && candidate.team !== viewer.team && candidate.statuses.some((status) => status.type === "stealth");
+  }
+
   private shake(amount: number): void {
     if (!this.settings.screenShake) return;
     this.screenShake = Math.min(0.9, Math.max(this.screenShake, amount));
@@ -1112,6 +1119,7 @@ export class GameEngine implements AiContext {
 
   private emitHud(): void {
     const player = this.player;
+    const ignoresEquippedSkills = this.heroId === "wuxiang" || this.heroId === "miaozong";
     const skills = abilityKeys.map((key) => this.getUnitAbility(player, key)).filter((ability): ability is AbilityDefinition => Boolean(ability)).map((ability) => ({
       key: ability.key,
       cooldown: player.abilityCooldowns[ability.key],
@@ -1119,7 +1127,7 @@ export class GameEngine implements AiContext {
       ready: player.alive && player.abilityCooldowns[ability.key] <= 0,
       name: ability.shortName,
       icon: ability.icon,
-      equipped: Boolean(this.equippedAbilities[ability.key])
+      equipped: !ignoresEquippedSkills && Boolean(this.equippedAbilities[ability.key])
     }));
     const bossStatus = bossLaneConfigs.map((config) => {
       const boss = Array.from(this.units.values()).find((unit) => unit.isBoss && unit.alive && unit.laneIndex === config.laneIndex);
@@ -1419,7 +1427,7 @@ export class GameEngine implements AiContext {
   };
 
   private handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.repeat && !["KeyQ", "KeyW", "KeyE", "KeyR"].includes(event.code)) return;
+    if (event.repeat && !["KeyQ", "KeyW", "KeyE", "KeyR", "KeyT"].includes(event.code)) return;
     if (!this.keyDownAt.has(event.code)) this.keyDownAt.set(event.code, performance.now());
     if (["KeyW", "KeyA", "KeyS", "KeyD"].includes(event.code)) this.keys.add(event.code);
     if (event.code === "Escape") {
@@ -1609,6 +1617,7 @@ export class GameEngine implements AiContext {
 
   private getUnitAbility(unit: GameUnit, key: AbilityKey): AbilityDefinition | undefined {
     if (unit.isPlayer && unit.team === "ally") {
+      if (this.heroId === "miaozong" || this.heroId === "wuxiang") return heroById[this.heroId].abilities.find((ability) => ability.key === key);
       return this.equippedAbilities[key] ?? heroById[this.heroId].abilities.find((ability) => ability.key === key);
     }
     return unit.heroId ? heroById[unit.heroId].abilities.find((ability) => ability.key === key) : undefined;
@@ -1625,6 +1634,7 @@ export class GameEngine implements AiContext {
   getEnemies(unit: GameUnit): GameUnit[] {
     return Array.from(this.units.values()).filter((candidate) => {
       if (!candidate.alive || candidate.id === unit.id || candidate.team === unit.team) return false;
+      if (this.isStealthedFrom(candidate, unit)) return false;
       if (candidate.kind === "monster") return unit.kind === "hero";
       if (unit.kind === "monster") return candidate.kind === "hero";
       return candidate.team !== "neutral";
@@ -1660,6 +1670,7 @@ export class GameEngine implements AiContext {
 
   tryBasicAttack(source: GameUnit, target: GameUnit): boolean {
     if (!source.alive || !target.alive || source.attackTimer > 0) return false;
+    if (this.isStealthedFrom(target, source)) return false;
     if (source.isPlayer && (this.isHiddenByBrush(target) || this.isHiddenByVision(target))) return false;
     const starBlade = source.statuses.find((status) => status.type === "starBlade");
     const range = source.stats.attackRange + (starBlade ? 1.8 : 0);

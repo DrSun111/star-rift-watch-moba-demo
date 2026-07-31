@@ -22,7 +22,8 @@ const validHeroIds = new Set([
   "huanyin",
   "xuanji",
   "chixiao",
-  "wuxiang"
+  "wuxiang",
+  "miaozong"
 ]);
 
 export const defaultSettings: GameSettings = {

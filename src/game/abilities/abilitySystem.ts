@@ -100,6 +100,20 @@ function enemiesInCapsule(ctx: AbilityContext, caster: GameUnit, from: THREE.Vec
   return ctx.getEnemies(caster).filter((unit) => unit.alive && pointInCapsule(unit.position, from, to, radius + unit.radius));
 }
 
+function nearestEnemyHero(ctx: AbilityContext, caster: GameUnit, point: THREE.Vector3, range: number): GameUnit | undefined {
+  return ctx
+    .getEnemies(caster)
+    .filter((unit) => unit.kind === "hero" && unit.alive && unit.position.distanceTo(caster.position) <= range + unit.radius)
+    .sort((a, b) => a.position.distanceTo(point) - b.position.distanceTo(point))[0];
+}
+
+function nearestEnemyTower(ctx: AbilityContext, caster: GameUnit, point: THREE.Vector3, range: number): GameUnit | undefined {
+  return ctx
+    .getEnemies(caster)
+    .filter((unit) => unit.kind === "tower" && unit.alive && unit.position.distanceTo(caster.position) <= range + unit.radius)
+    .sort((a, b) => a.position.distanceTo(point) - b.position.distanceTo(point))[0];
+}
+
 export function castHeroAbility(ctx: AbilityContext, caster: GameUnit, ability: AbilityDefinition, aim: CastAim): boolean {
   const color = colorFor(caster);
   const origin = caster.position.clone();
@@ -139,6 +153,76 @@ export function castHeroAbility(ctx: AbilityContext, caster: GameUnit, ability: 
       ctx.ring(destination, 2.2, color, 0.45);
       ctx.playAudio("dash");
       return true;
+    }
+  }
+
+  if (caster.heroId === "miaozong") {
+    const gold = "#f8d26b";
+    const white = "#ffffff";
+    if (ability.key === "Q") {
+      ctx.addStatus(caster, { type: "stealth", remaining: 12, value: 1, sourceId: caster.id });
+      ctx.addStatus(caster, { type: "speed", remaining: 12, value: 0.45, sourceId: caster.id });
+      caster.shield = Math.max(caster.shield, 1888);
+      ctx.addStatus(caster, { type: "shield", remaining: 12, value: 1888, sourceId: caster.id });
+      ctx.ring(origin, 3.6, white, 0.75);
+      ctx.burst(origin.clone().add(new THREE.Vector3(0, 1.6, 0)), caster.team, 28, 1.35);
+      return true;
+    }
+    if (ability.key === "W") {
+      const target = nearestEnemyHero(ctx, caster, aim.point, ability.range);
+      if (!target) return false;
+      ctx.ring(target.position, 3.4, gold, 0.72);
+      ctx.damage(caster, target, 999999, "true", origin);
+      target.respawnTimer = 20;
+      ctx.addStatus(target, { type: "deleted", remaining: 20, value: 1, sourceId: caster.id });
+      target.object.visible = false;
+      ctx.burst(target.position.clone().add(new THREE.Vector3(0, 1.2, 0)), caster.team, 36, 1.5);
+      return true;
+    }
+    if (ability.key === "E") {
+      const target = nearestEnemyHero(ctx, caster, aim.point, ability.range);
+      if (!target) return false;
+      ctx.ring(target.position, 2.6, "#ff4778", 0.55);
+      ctx.damage(caster, target, ability.damage, "true", origin);
+      ctx.burst(target.position.clone().add(new THREE.Vector3(0, 1.2, 0)), caster.team, 28, 1.25);
+      return true;
+    }
+    if (ability.key === "R") {
+      const tower = nearestEnemyTower(ctx, caster, aim.point, ability.range);
+      if (!tower) return false;
+      tower.team = caster.team;
+      tower.name = `缪总接管·${tower.name.replace(/^敌方/, "").replace(/^己方/, "")}`;
+      tower.hp = tower.stats.maxHp;
+      tower.shield = Math.max(tower.shield, 1200);
+      tower.lastDamagedBy = undefined;
+      tower.targetId = undefined;
+      tower.object.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          materials.forEach((material) => {
+            if (material instanceof THREE.MeshStandardMaterial) {
+              material.emissive = new THREE.Color(gold);
+              material.emissiveIntensity = Math.max(material.emissiveIntensity, 0.55);
+            }
+            if (material instanceof THREE.MeshBasicMaterial) material.color = new THREE.Color(gold);
+          });
+        }
+      });
+      ctx.ring(tower.position, 5.2, gold, 1.0);
+      ctx.burst(tower.position.clone().add(new THREE.Vector3(0, 2.4, 0)), caster.team, 44, 1.7);
+      return true;
+    }
+    if (ability.key === "T") {
+      const towers = ctx.getAllies(caster).filter((unit) => unit.kind === "tower" && unit.alive);
+      towers.forEach((tower) => {
+        tower.hp = tower.stats.maxHp;
+        tower.shield = Math.max(tower.shield, 888);
+        ctx.addStatus(tower, { type: "shield", remaining: 8, value: 888, sourceId: caster.id });
+        ctx.ring(tower.position, 3.2, gold, 0.68);
+      });
+      ctx.ring(origin, 8.8, white, 0.9);
+      ctx.burst(origin.clone().add(new THREE.Vector3(0, 1.5, 0)), caster.team, 34, 1.5);
+      return towers.length > 0;
     }
   }
 

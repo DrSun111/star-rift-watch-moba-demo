@@ -8,6 +8,7 @@ import { addMasteryResult, addRecord, defaultGachaState, defaultSettings, loadGa
 import type { GachaSaveState, HeroMasteryState } from "../utils/storage";
 
 type Screen = "home" | "select" | "battle" | "results" | "gacha";
+const funHeroIds = new Set<HeroDefinition["id"]>(["wuxiang", "miaozong"]);
 
 interface AppState {
   screen: Screen;
@@ -48,13 +49,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   showScoreboard: false,
   setScreen: (screen) => set({ screen }),
   selectHero: (heroId) => {
-    const safeHeroId = heroId === "wuxiang" && !get().settings.funMode ? heroes[0].id : heroId;
+    const safeHeroId = funHeroIds.has(heroId) && !get().settings.funMode ? heroes[0].id : heroId;
     saveLastHero(safeHeroId);
     set({ selectedHeroId: safeHeroId });
   },
   updateSettings: (patch) => {
     const settings = { ...get().settings, ...patch };
-    const selectedHeroId = !settings.funMode && get().selectedHeroId === "wuxiang" ? heroes[0].id : get().selectedHeroId;
+    const selectedHeroId = !settings.funMode && funHeroIds.has(get().selectedHeroId) ? heroes[0].id : get().selectedHeroId;
     saveSettings(settings);
     if (selectedHeroId !== get().selectedHeroId) saveLastHero(selectedHeroId);
     set({ settings, selectedHeroId });
@@ -63,7 +64,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   startBattle: () =>
     set({
       screen: "battle",
-      selectedHeroId: get().selectedHeroId === "wuxiang" && !get().settings.funMode ? heroes[0].id : get().selectedHeroId,
+      selectedHeroId: funHeroIds.has(get().selectedHeroId) && !get().settings.funMode ? heroes[0].id : get().selectedHeroId,
       paused: false,
       showScoreboard: false,
       hud: undefined,

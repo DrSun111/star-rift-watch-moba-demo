@@ -18,9 +18,10 @@ export type HeroId =
   | "huanyin"
   | "xuanji"
   | "chixiao"
-  | "wuxiang";
+  | "wuxiang"
+  | "miaozong";
 export type HeroArchetype = "warrior" | "mage" | "tank";
-export type AbilityKey = "Q" | "W" | "E" | "R";
+export type AbilityKey = "Q" | "W" | "E" | "R" | "T";
 export type AbilityTargeting = "direction" | "point" | "self" | "area";
 export type DamageType = "physical" | "magic" | "true";
 export type BossBuffType = "power" | "haste" | "guard";
@@ -58,7 +59,7 @@ export interface AbilityDefinition {
   damage: number;
   damageType: DamageType;
   targeting: AbilityTargeting;
-  icon: "blade" | "spin" | "guard" | "nova" | "orb" | "vines" | "blink" | "storm" | "charge" | "shield" | "quake" | "domain";
+  icon: "blade" | "spin" | "guard" | "nova" | "orb" | "vines" | "blink" | "storm" | "charge" | "shield" | "quake" | "domain" | "veil" | "erase" | "fatal" | "convert" | "repair";
 }
 
 export interface HeroDefinition {
@@ -89,7 +90,7 @@ export interface HeroDefinition {
 
 export interface StatusEffect {
   id: string;
-  type: "slow" | "stun" | "knockback" | "shield" | "damageReduction" | "speed" | "attackBoost" | "starBlade" | "domain";
+  type: "slow" | "stun" | "knockback" | "shield" | "damageReduction" | "speed" | "attackBoost" | "starBlade" | "domain" | "stealth" | "deleted";
   remaining: number;
   value: number;
   sourceId?: string;
