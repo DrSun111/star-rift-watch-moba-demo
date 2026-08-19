@@ -26,7 +26,7 @@ let main=await readFile(mainPath,'utf8');
 main=main.replace(/if\('serviceWorker' in navigator\)\{[\s\S]*?\}\s*$/m,"// Native Android package: service worker disabled.");
 await writeFile(mainPath,main,'utf8');
 
-// Vite resolves Three.js/addons from node_modules and emits browser-compatible local bundles.
+// Vite resolves Three.js/addons from node_modules and emits WebView-compatible local bundles.
 await build({
   root:stage,
   base:'./',
@@ -36,7 +36,7 @@ await build({
     outDir:dest,
     emptyOutDir:true,
     target:'es2020',
-    minify:'esbuild',
+    minify:'oxc',
     sourcemap:false,
     cssCodeSplit:true,
     assetsInlineLimit:8192,
