@@ -1,4 +1,4 @@
-const CACHE='voxel-epoch-v4';
+const CACHE='voxel-epoch-v5';
 const CORE=['./','./index.html','./styles.css','./favicon.svg','./manifest.webmanifest','./src/main.js','./src/config.js','./src/textures.js','./src/world.js','./src/player.js','./src/entities.js','./src/gameplay.js','./src/ui.js','./src/save.js'];
 
 self.addEventListener('install',event=>{
