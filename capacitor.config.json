@@ -1,0 +1,13 @@
+{
+  "appId": "com.voxelepoch.sixrealms",
+  "appName": "方块纪元：六境与异界",
+  "webDir": "mobile-dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#081018",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": true
+  }
+}
