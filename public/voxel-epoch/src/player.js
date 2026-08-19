@@ -6,13 +6,46 @@ import { createPetModel } from './entities.js';
 function m(color,emissive=0x000000,ei=0){return new THREE.MeshStandardMaterial({color,roughness:.72,emissive,emissiveIntensity:ei});}
 function box(w,h,d,mat){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);o.castShadow=true;o.receiveShadow=true;return o;}
 function buildAvatar(){
-  const g=new THREE.Group();g.name='player-avatar';
-  const skin=m('#d9aa82'),shirt=m('#3cb08d'),pants=m('#263b4a'),hair=m('#26303a'),metal=m('#c6d1da');
-  const torso=box(.58,.72,.32,shirt);torso.position.y=1.12;const head=box(.48,.48,.48,skin);head.position.y=1.74;const hairTop=box(.5,.12,.5,hair);hairTop.position.y=2.02;
-  const armL=box(.18,.7,.22,shirt),armR=armL.clone();armL.position.set(-.4,1.12,0);armR.position.set(.4,1.12,0);const legL=box(.22,.72,.24,pants),legR=legL.clone();legL.position.set(-.16,.36,0);legR.position.set(.16,.36,0);
-  const weapon=box(.07,1.05,.07,metal);weapon.position.set(.52,1.0,.02);weapon.rotation.z=-.18;weapon.name='weapon-visual';
-  const chest=box(.67,.5,.38,m('#87c8d6'));chest.position.y=1.22;chest.visible=false;const shoulderL=box(.22,.22,.4,m('#87c8d6')),shoulderR=shoulderL.clone();shoulderL.position.set(-.43,1.42,0);shoulderR.position.set(.43,1.42,0);shoulderL.visible=shoulderR.visible=false;const helm=box(.55,.2,.55,m('#87c8d6'));helm.position.y=2.06;helm.visible=false;
-  g.add(torso,head,hairTop,armL,armR,legL,legR,weapon,chest,shoulderL,shoulderR,helm);g.userData.parts={torso,head,hairTop,armL,armR,legL,legR,weapon,chest,shoulderL,shoulderR,helm};return g;
+  const root=new THREE.Group();root.name='player-avatar';
+  const skin=m('#d9aa82'),skinShade=m('#c58f69'),shirt=m('#36a985'),shirtDark=m('#24765f'),pants=m('#263b4a'),boot=m('#172631'),hair=m('#222b35'),hair2=m('#303a46'),metal=m('#c6d1da'),eye=m('#17222c'),white=m('#edf4f6');
+
+  const torso=box(.62,.72,.34,shirt);torso.position.y=1.12;
+  const collar=box(.30,.10,.025,shirtDark);collar.position.set(0,1.41,-.183);
+  const belt=box(.64,.09,.36,m('#1d2e39'));belt.position.y=.79;
+
+  const head=box(.50,.50,.50,skin);head.position.y=1.78;
+  const hairTop=box(.52,.13,.52,hair);hairTop.position.y=2.095;
+  const hairBack=box(.52,.28,.10,hair2);hairBack.position.set(0,1.91,.255);
+  const fringeL=box(.16,.11,.035,hair);fringeL.position.set(-.14,2.00,-.267);
+  const fringeR=box(.13,.08,.035,hair);fringeR.position.set(.13,2.02,-.267);
+  const eyeL=box(.075,.055,.026,eye),eyeR=eyeL.clone();eyeL.position.set(-.12,1.82,-.266);eyeR.position.set(.12,1.82,-.266);
+  const eyeGlintL=box(.018,.018,.010,white),eyeGlintR=eyeGlintL.clone();eyeGlintL.position.set(-.103,1.834,-.282);eyeGlintR.position.set(.137,1.834,-.282);
+  const nose=box(.055,.065,.045,skinShade);nose.position.set(0,1.73,-.276);
+
+  const armLPivot=new THREE.Group(),armRPivot=new THREE.Group();armLPivot.position.set(-.41,1.42,0);armRPivot.position.set(.41,1.42,0);
+  const armL=box(.20,.64,.24,shirt),armR=box(.20,.64,.24,shirt);armL.position.y=-.31;armR.position.y=-.31;
+  const handL=box(.20,.18,.24,skin),handR=box(.20,.18,.24,skin);handL.position.y=-.68;handR.position.y=-.68;
+  armLPivot.add(armL,handL);armRPivot.add(armR,handR);
+
+  const legLPivot=new THREE.Group(),legRPivot=new THREE.Group();legLPivot.position.set(-.17,.76,0);legRPivot.position.set(.17,.76,0);
+  const legL=box(.25,.62,.27,pants),legR=box(.25,.62,.27,pants);legL.position.y=-.30;legR.position.y=-.30;
+  const bootL=box(.26,.19,.34,boot),bootR=box(.26,.19,.34,boot);bootL.position.set(0,-.67,-.035);bootR.position.set(0,-.67,-.035);
+  legLPivot.add(legL,bootL);legRPivot.add(legR,bootR);
+
+  const weaponPivot=new THREE.Group();weaponPivot.position.set(.04,-.61,-.07);weaponPivot.rotation.set(.08,0,-.18);
+  const weapon=box(.065,.86,.065,metal);weapon.position.y=-.38;weapon.name='weapon-visual';
+  const guard=box(.30,.055,.09,m('#6b7780'));guard.position.y=.04;
+  const grip=box(.075,.25,.075,m('#6e4e36'));grip.position.y=.18;
+  weaponPivot.add(weapon,guard,grip);armRPivot.add(weaponPivot);
+
+  const armorMat=m('#87c8d6');
+  const chest=box(.70,.52,.39,armorMat);chest.position.y=1.17;chest.visible=false;
+  const shoulderL=box(.25,.22,.42,armorMat),shoulderR=shoulderL.clone();shoulderL.position.set(-.45,1.43,0);shoulderR.position.set(.45,1.43,0);shoulderL.visible=shoulderR.visible=false;
+  const helm=box(.57,.20,.57,armorMat);helm.position.y=2.11;helm.visible=false;
+
+  root.add(torso,collar,belt,head,hairTop,hairBack,fringeL,fringeR,eyeL,eyeR,eyeGlintL,eyeGlintR,nose,armLPivot,armRPivot,legLPivot,legRPivot,chest,shoulderL,shoulderR,helm);
+  root.userData.parts={torso,head,hairTop,armL,armR,handL,handR,armLPivot,armRPivot,legL,legR,legLPivot,legRPivot,weapon,weaponPivot,chest,shoulderL,shoulderR,helm};
+  return root;
 }
 function buildVehicle(){
   const root=new THREE.Group();root.name='player-vehicle';const wood=m('#7e583d'),wood2=m('#a87850'),cloth=m('#e7ded0'),metal=m('#6e8795'),glass=m('#78c6d6',0x174e5c,.18),dark=m('#2b3842');
@@ -25,7 +58,7 @@ export class PlayerController{
   constructor(camera,domElement,scene,world,state){
     this.camera=camera;this.domElement=domElement;this.scene=scene;this.world=world;this.state=state;
     this.controls=new PointerLockControls(camera,domElement);this.controls.pointerSpeed=0;
-    this.position=new THREE.Vector3(state.x||0,state.y||10,state.z||0);this.velocity=new THREE.Vector3();this.keys={};this.onGround=false;this.walkPhase=0;
+    this.position=new THREE.Vector3(state.x||0,state.y||10,state.z||0);this.velocity=new THREE.Vector3();this.keys={};this.onGround=false;this.walkPhase=0;this.bodyYaw=Number.isFinite(state.bodyYaw)?state.bodyYaw:-(Number.isFinite(state.lookYaw)?state.lookYaw:0);this.moveDirection=new THREE.Vector3();
     this.avatar=buildAvatar();scene.add(this.avatar);this.vehicle=buildVehicle();scene.add(this.vehicle);this.mountVisual=null;this.mountVisualId=null;
     this.horizontalForward=new THREE.Vector3(0,0,-1);this.lookDirection=new THREE.Vector3(0,0,-1);this.right=new THREE.Vector3(1,0,0);this.up=new THREE.Vector3(0,1,0);
     this.yaw=Number.isFinite(state.lookYaw)?state.lookYaw:0;this.pitch=Number.isFinite(state.lookPitch)?state.lookPitch:-.08;
@@ -49,13 +82,35 @@ export class PlayerController{
   update(dt){
     this.syncMountVisual();const cp=Math.cos(this.pitch);this.horizontalForward.set(Math.sin(this.yaw),0,-Math.cos(this.yaw)).normalize();this.lookDirection.set(Math.sin(this.yaw)*cp,Math.sin(this.pitch),-Math.cos(this.yaw)*cp).normalize();this.right.crossVectors(this.horizontalForward,this.up).normalize();
     let f=(this.keys.KeyW?1:0)-(this.keys.KeyS?1:0),s=(this.keys.KeyD?1:0)-(this.keys.KeyA?1:0);const moving=!!(f||s);let speed=this.keys.ShiftLeft||this.keys.ShiftRight?GAME.sprintSpeed:GAME.walkSpeed;const mounted=this.state.pets?.find(p=>p.id===this.state.mountedPet);if(mounted)speed=mounted.mount==='fly'?GAME.rideSpeed*1.22:mounted.mount==='swim'?GAME.rideSpeed*1.08:GAME.rideSpeed;
-    if(moving){const len=Math.hypot(f,s)||1;f/=len;s/=len;const move=this.horizontalForward.clone().multiplyScalar(f*speed*dt).addScaledVector(this.right,s*speed*dt);const currentGround=this.world.getTopSolidY(this.position.x,this.position.z),tx=this.position.x+move.x,tz=this.position.z+move.z,gx=this.world.getTopSolidY(tx,this.position.z),gz=this.world.getTopSolidY(this.position.x,tz);if(mounted?.mount==='fly'||gx-currentGround<=1)this.position.x=tx;if(mounted?.mount==='fly'||gz-currentGround<=1)this.position.z=tz;this.walkPhase+=dt*(mounted?6.5:9);}
+    this.moveDirection.set(0,0,0);
+    if(moving){
+      const len=Math.hypot(f,s)||1;f/=len;s/=len;
+      this.moveDirection.copy(this.horizontalForward).multiplyScalar(f).addScaledVector(this.right,s).normalize();
+      const move=this.moveDirection.clone().multiplyScalar(speed*dt);
+      const currentGround=this.world.getTopSolidY(this.position.x,this.position.z),tx=this.position.x+move.x,tz=this.position.z+move.z,gx=this.world.getTopSolidY(tx,this.position.z),gz=this.world.getTopSolidY(this.position.x,tz);
+      if(mounted?.mount==='fly'||gx-currentGround<=1)this.position.x=tx;if(mounted?.mount==='fly'||gz-currentGround<=1)this.position.z=tz;
+      const targetYaw=Math.atan2(-this.moveDirection.x,-this.moveDirection.z),delta=Math.atan2(Math.sin(targetYaw-this.bodyYaw),Math.cos(targetYaw-this.bodyYaw));
+      this.bodyYaw+=delta*Math.min(1,dt*(mounted?12:15));this.walkPhase+=dt*(mounted?6.5:9);
+    }else if(this.state.view==='first'){
+      const targetYaw=-this.yaw,delta=Math.atan2(Math.sin(targetYaw-this.bodyYaw),Math.cos(targetYaw-this.bodyYaw));this.bodyYaw+=delta*Math.min(1,dt*10);
+    }
+    this.state.bodyYaw=this.bodyYaw;
     this.position.x=THREE.MathUtils.clamp(this.position.x,-GAME.worldLimit,GAME.worldLimit);this.position.z=THREE.MathUtils.clamp(this.position.z,-GAME.worldLimit,GAME.worldLimit);
     if(mounted?.mount==='fly'){const rise=(this.keys.Space?1:0)-((this.keys.ControlLeft||this.keys.ControlRight)?1:0);this.velocity.y=0;this.position.y+=rise*GAME.rideSpeed*.72*dt;this.position.y=Math.max(this.world.getTopSolidY(this.position.x,this.position.z)+1.35,this.position.y);this.onGround=false;}else{this.velocity.y-=GAME.gravity*dt;this.position.y+=this.velocity.y*dt;const water=this.world.getWaterY(this.position.x,this.position.z),ground=Math.max(this.world.getTopSolidY(this.position.x,this.position.z),water??-Infinity)+1.01;if(this.position.y<=ground){this.position.y=ground;this.velocity.y=0;this.onGround=true;}else this.onGround=false;}
-    let seatLift=0;if(mounted){const rootY=this.position.y-(mounted.mount==='fly' ? .78 : .93);if(this.mountVisual){this.mountVisual.position.set(this.position.x,rootY+Math.sin(this.walkPhase*1.4)*.035,this.position.z);this.mountVisual.rotation.y=this.yaw+Math.PI/2;this.mountVisual.rotation.z=moving?Math.sin(this.walkPhase*.45)*.025:0;}seatLift=mounted.rank==='SSSS'?1.55:mounted.rank==='SSS'?1.27:1.05;}
-    this.avatar.position.copy(this.position);this.avatar.position.y+=seatLift;this.avatar.rotation.y=this.yaw;
-    const biome=this.world.getBiome(this.position.x,this.position.z),boatOn=this.state.dimension==='overworld'&&biome==='ocean'&&!mounted&&this.state.gear.boat,subOn=this.state.dimension==='overworld'&&biome==='ocean'&&!mounted&&this.state.gear.sub;this.vehicle.userData.boat.visible=boatOn&&!subOn;this.vehicle.userData.sub.visible=subOn;this.vehicle.position.copy(this.position);this.vehicle.position.y-=.78;this.vehicle.rotation.y=this.yaw;this.vehicle.visible=(boatOn||subOn)&&this.state.view!=='first';if(boatOn||subOn)this.avatar.position.y+=subOn ? .35 : .18;
-    const parts=this.avatar.userData.parts;if(mounted){parts.legL.rotation.x=-1.05;parts.legR.rotation.x=-1.05;parts.armL.rotation.x=-.28;parts.armR.rotation.x=-.28;}else if(moving){const swing=Math.sin(this.walkPhase)*.48;parts.armL.rotation.x=swing;parts.armR.rotation.x=-swing;parts.legL.rotation.x=-swing;parts.legR.rotation.x=swing;}else{parts.armL.rotation.x*=.8;parts.armR.rotation.x*=.8;parts.legL.rotation.x*=.8;parts.legR.rotation.x*=.8;}
+    let seatLift=0;if(mounted){const rootY=this.position.y-(mounted.mount==='fly' ? .78 : .93);if(this.mountVisual){this.mountVisual.position.set(this.position.x,rootY+Math.sin(this.walkPhase*1.4)*.035,this.position.z);this.mountVisual.rotation.y=this.bodyYaw+Math.PI/2;this.mountVisual.rotation.z=moving?Math.sin(this.walkPhase*.45)*.025:0;}seatLift=mounted.rank==='SSSS'?1.55:mounted.rank==='SSS'?1.27:1.05;}
+    this.avatar.position.copy(this.position);this.avatar.position.y+=seatLift;this.avatar.rotation.y=this.bodyYaw;
+    const biome=this.world.getBiome(this.position.x,this.position.z),boatOn=this.state.dimension==='overworld'&&biome==='ocean'&&!mounted&&this.state.gear.boat,subOn=this.state.dimension==='overworld'&&biome==='ocean'&&!mounted&&this.state.gear.sub;this.vehicle.userData.boat.visible=boatOn&&!subOn;this.vehicle.userData.sub.visible=subOn;this.vehicle.position.copy(this.position);this.vehicle.position.y-=.78;this.vehicle.rotation.y=this.bodyYaw+Math.PI/2;this.vehicle.visible=(boatOn||subOn)&&this.state.view!=='first';if(boatOn||subOn)this.avatar.position.y+=subOn ? .35 : .18;
+    const parts=this.avatar.userData.parts;
+    if(mounted){
+      parts.legLPivot.rotation.x=-1.05;parts.legRPivot.rotation.x=-1.05;parts.legLPivot.rotation.z=-.10;parts.legRPivot.rotation.z=.10;
+      parts.armLPivot.rotation.x=-.24;parts.armRPivot.rotation.x=-.24;
+    }else if(moving){
+      const swing=Math.sin(this.walkPhase)*.58,bob=Math.abs(Math.sin(this.walkPhase))*0.035;
+      parts.armLPivot.rotation.x=swing;parts.armRPivot.rotation.x=-swing*.82;parts.legLPivot.rotation.x=-swing;parts.legRPivot.rotation.x=swing;
+      parts.legLPivot.rotation.z*=.75;parts.legRPivot.rotation.z*=.75;this.avatar.position.y+=bob;
+    }else{
+      for(const pivot of [parts.armLPivot,parts.armRPivot,parts.legLPivot,parts.legRPivot]){pivot.rotation.x*=.72;pivot.rotation.z*=.72;}
+    }
     this.updateCamera();this.state.x=this.position.x;this.state.y=this.position.y;this.state.z=this.position.z;
   }
   updateCamera(){
