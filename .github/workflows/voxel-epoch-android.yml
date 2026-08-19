@@ -1,0 +1,63 @@
+name: Build Voxel Epoch Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'public/voxel-epoch/**'
+      - 'scripts/build-voxel-mobile.mjs'
+      - 'scripts/patch-voxel-android.mjs'
+      - 'capacitor.config.json'
+      - '.github/workflows/voxel-epoch-android.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Prepare offline high-fidelity game assets
+        run: node scripts/build-voxel-mobile.mjs
+
+      - name: Install Capacitor 8 build tools
+        run: npm install --no-save @capacitor/cli@^8.0.0 @capacitor/core@^8.0.0 @capacitor/android@^8.0.0
+
+      - name: Generate Android project
+        run: |
+          npx cap add android
+          npx cap sync android
+          node scripts/patch-voxel-android.mjs
+
+      - name: Build debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk VoxelEpoch-SixRealms-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VoxelEpoch-Android-APK
+          path: VoxelEpoch-SixRealms-debug.apk
+          retention-days: 30
