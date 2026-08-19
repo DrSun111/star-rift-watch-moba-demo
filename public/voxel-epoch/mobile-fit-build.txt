@@ -1,1 +1,2 @@
 Android mobile viewport/WebView compatibility verification build.
+retry: vite-oxc
