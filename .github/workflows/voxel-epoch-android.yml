@@ -10,6 +10,14 @@ on:
       - 'scripts/patch-voxel-android.mjs'
       - 'capacitor.config.json'
       - '.github/workflows/voxel-epoch-android.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/voxel-epoch/**'
+      - 'scripts/build-voxel-mobile.mjs'
+      - 'scripts/patch-voxel-android.mjs'
+      - 'capacitor.config.json'
+      - '.github/workflows/voxel-epoch-android.yml'
 
 permissions:
   contents: read
