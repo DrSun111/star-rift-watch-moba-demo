@@ -2,10 +2,13 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#101a24" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#081018" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>方块纪元：六境与异界</title>
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./mobile.css" media="(pointer: coarse)" data-mobile-controls-style />
   <script type="importmap">
   {
     "imports": {
@@ -14,8 +17,15 @@
     }
   }
   </script>
+  <style>
+    #boot-error{display:none;position:fixed;inset:0;z-index:99999;background:#071018;color:#eef7ff;padding:max(22px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(22px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left));font-family:system-ui,sans-serif;overflow:auto}
+    #boot-error.show{display:flex;align-items:center;justify-content:center}
+    #boot-error>div{max-width:720px;background:#101d29;border:1px solid #294054;border-radius:20px;padding:22px;box-shadow:0 24px 80px #0008}
+    #boot-error h2{margin:0 0 10px;font-size:22px}#boot-error p{line-height:1.6;color:#bcd0df}#boot-error pre{white-space:pre-wrap;word-break:break-word;background:#071018;padding:12px;border-radius:12px;color:#ffcfb6;font-size:12px}
+  </style>
 </head>
 <body>
+  <div id="boot-error"><div><h2>游戏启动失败</h2><p>当前设备的 WebView 没有成功初始化游戏。新版 Android 包会使用本地打包脚本避免网络与 importmap 兼容问题。</p><pre id="boot-error-detail"></pre></div></div>
   <div id="game-root">
     <canvas id="game-canvas"></canvas>
 
@@ -23,107 +33,31 @@
     <div id="hit-hint" class="floating-hint hidden"></div>
 
     <header id="top-hud" class="hud-glass">
-      <div class="brand">
-        <div class="brand-mark">◫</div>
-        <div class="brand-copy">
-          <strong>方块纪元</strong>
-          <small>六境与异界</small>
-        </div>
-      </div>
-      <div class="world-chip" id="biome-chip">森林</div>
-      <div class="world-chip" id="view-chip">第三人称</div>
-      <div class="top-spacer"></div>
-      <button class="hud-btn pet-top-btn" id="btn-pets" title="精灵中心 P">PET</button>
-      <button class="hud-btn" id="btn-map" title="世界地图 M">M</button>
-      <button class="hud-btn" id="btn-inventory" title="背包 / 制作 Tab">TAB</button>
-      <button class="hud-btn" id="btn-view" title="切换视角 V">V</button>
-      <button class="hud-btn" id="btn-ui" title="隐藏HUD H">H</button>
+      <div class="brand"><div class="brand-mark">◫</div><div class="brand-copy"><strong>方块纪元</strong><small>六境与异界</small></div></div>
+      <div class="world-chip" id="biome-chip">森林</div><div class="world-chip" id="view-chip">第三人称</div><div class="top-spacer"></div>
+      <button class="hud-btn pet-top-btn" id="btn-pets" title="精灵中心 P">PET</button><button class="hud-btn" id="btn-map" title="世界地图 M">M</button><button class="hud-btn" id="btn-inventory" title="背包 / 制作 Tab">TAB</button><button class="hud-btn" id="btn-view" title="切换视角 V">V</button><button class="hud-btn" id="btn-ui" title="隐藏HUD H">H</button>
     </header>
 
-    <section id="quest-panel" class="hud-glass compact-panel">
-      <div class="panel-kicker">当前区域任务</div>
-      <div class="quest-title" id="quest-title">森林：建立生存基础</div>
-      <div class="quest-body" id="quest-body">采集木材与石料，制作第一件工具。</div>
-      <div class="quest-progress"><i id="quest-progress-fill"></i></div>
-      <div class="quest-meta" id="quest-meta">0 / 1</div>
-    </section>
+    <section id="quest-panel" class="hud-glass compact-panel"><div class="panel-kicker">当前区域任务</div><div class="quest-title" id="quest-title">森林：建立生存基础</div><div class="quest-body" id="quest-body">采集木材与石料，制作第一件工具。</div><div class="quest-progress"><i id="quest-progress-fill"></i></div><div class="quest-meta" id="quest-meta">0 / 1</div></section>
+    <section id="status-panel" class="hud-glass status-panel"><div class="status-line"><span>生命</span><div class="meter"><i id="hp-fill"></i></div><b id="hp-text">100</b></div><div class="status-line"><span>体温</span><div class="meter cold"><i id="temp-fill"></i></div><b id="temp-text">100</b></div><div class="status-line"><span>水分</span><div class="meter water"><i id="water-fill"></i></div><b id="water-text">100</b></div></section>
+    <section id="minimap-panel" class="hud-glass minimap-panel"><div class="mini-head"><span>区域地图</span><span id="coords-text">0, 0</span></div><canvas id="minimap" width="240" height="160"></canvas><div class="mini-legend"><span><i class="legend player"></i>玩家</span><span><i class="legend shrine"></i>祭坛</span><span><i class="legend pet"></i>精灵</span><span><i class="legend npc"></i>村民</span></div></section>
 
-    <section id="status-panel" class="hud-glass status-panel">
-      <div class="status-line"><span>生命</span><div class="meter"><i id="hp-fill"></i></div><b id="hp-text">100</b></div>
-      <div class="status-line"><span>体温</span><div class="meter cold"><i id="temp-fill"></i></div><b id="temp-text">100</b></div>
-      <div class="status-line"><span>水分</span><div class="meter water"><i id="water-fill"></i></div><b id="water-text">100</b></div>
-    </section>
-
-    <section id="minimap-panel" class="hud-glass minimap-panel">
-      <div class="mini-head"><span>区域地图</span><span id="coords-text">0, 0</span></div>
-      <canvas id="minimap" width="240" height="160"></canvas>
-      <div class="mini-legend"><span><i class="legend player"></i>玩家</span><span><i class="legend shrine"></i>祭坛</span><span><i class="legend pet"></i>精灵</span><span><i class="legend npc"></i>村民</span></div>
-    </section>
-
-    <div id="boss-bar" class="boss-bar hidden">
-      <div><strong>虚空末影龙</strong><span id="boss-hp-text">100%</span></div>
-      <div class="boss-track"><i id="boss-hp-fill"></i></div>
-    </div>
-
+    <div id="boss-bar" class="boss-bar hidden"><div><strong>虚空末影龙</strong><span id="boss-hp-text">100%</span></div><div class="boss-track"><i id="boss-hp-fill"></i></div></div>
     <section id="hotbar" class="hud-glass hotbar"></section>
-
-    <div id="controls-strip" class="hud-glass controls-strip">
-      <span><kbd>WASD</kbd>移动</span><span><kbd>Space</kbd>跳跃</span><span><kbd>Shift</kbd>冲刺</span>
-      <span><kbd>左键</kbd>拆除/攻击</span><span><kbd>右键</kbd>放置</span><span><kbd>E</kbd>交互</span>
-      <span><kbd>Q</kbd>捕捉</span><span><kbd>P</kbd>精灵中心</span><span><kbd>R</kbd>骑乘选择</span><span><kbd>V</kbd>视角</span>
-    </div>
-
+    <div id="controls-strip" class="hud-glass controls-strip"><span><kbd>WASD</kbd>移动</span><span><kbd>Space</kbd>跳跃</span><span><kbd>Shift</kbd>冲刺</span><span><kbd>左键</kbd>拆除/攻击</span><span><kbd>右键</kbd>放置</span><span><kbd>E</kbd>交互</span><span><kbd>Q</kbd>捕捉</span><span><kbd>P</kbd>精灵中心</span><span><kbd>R</kbd>骑乘选择</span><span><kbd>V</kbd>视角</span></div>
     <div id="toast-stack" class="toast-stack"></div>
 
     <div id="drawer-backdrop" class="backdrop hidden"></div>
-    <aside id="inventory-drawer" class="drawer hidden">
-      <div class="drawer-head">
-        <div><div class="panel-kicker">生存终端</div><h2>背包与制作</h2></div>
-        <button class="close-btn" id="close-drawer">×</button>
-      </div>
-      <nav class="tabs" id="drawer-tabs">
-        <button data-tab="bag" class="active">背包</button>
-        <button data-tab="craft">制作</button>
-        <button data-tab="pets">精灵</button>
-        <button data-tab="quests">任务</button>
-        <button data-tab="guide">玩法</button>
-      </nav>
-      <div id="drawer-content" class="drawer-content"></div>
-    </aside>
+    <aside id="inventory-drawer" class="drawer hidden"><div class="drawer-head"><div><div class="panel-kicker">生存终端</div><h2>背包与制作</h2></div><button class="close-btn" id="close-drawer">×</button></div><nav class="tabs" id="drawer-tabs"><button data-tab="bag" class="active">背包</button><button data-tab="craft">制作</button><button data-tab="pets">精灵</button><button data-tab="quests">任务</button><button data-tab="guide">玩法</button></nav><div id="drawer-content" class="drawer-content"></div></aside>
 
-    <div id="map-modal" class="modal-shell hidden">
-      <div class="map-modal hud-glass">
-        <div class="drawer-head">
-          <div><div class="panel-kicker">WORLD ATLAS</div><h2>六境世界地图</h2></div>
-          <button class="close-btn" id="close-map">×</button>
-        </div>
-        <canvas id="world-map" width="960" height="560"></canvas>
-        <div class="map-footer" id="map-footer"></div>
-      </div>
-    </div>
+    <div id="map-modal" class="modal-shell hidden"><div class="map-modal hud-glass"><div class="drawer-head"><div><div class="panel-kicker">WORLD ATLAS</div><h2>六境世界地图</h2></div><button class="close-btn" id="close-map">×</button></div><canvas id="world-map" width="960" height="560"></canvas><div class="map-footer" id="map-footer"></div></div></div>
 
-    <div id="start-screen" class="start-screen">
-      <div class="start-hero">
-        <div class="eyebrow">THREE.JS VOXEL SURVIVAL</div>
-        <h1>方块纪元：六境与异界</h1>
-        <p>真正的 WebGL 方块世界。探索六大生态，建造、生存、捕捉并进化精灵，解锁祭坛，打造异世界传送门，最终击败虚空末影龙。</p>
-        <div class="hero-actions">
-          <button id="start-game" class="primary-action">进入世界</button>
-          <button id="reset-save" class="secondary-action">重置存档</button>
-        </div>
-        <div class="hero-grid">
-          <div><b>体素建造</b><span>左键拆除，右键放置；方块可堆叠、拆改并自动存档。</span></div>
-          <div><b>真实 3D 操作</b><span>鼠标锁定控制视角，WASD 前后左右，Space 跳跃，Shift 冲刺。</span></div>
-          <div><b>六境任务链</b><span>森林、海洋、雪地、荒野、沙漠、热带拥有不同生存条件与专属任务。</span></div>
-          <div><b>精灵生态</b><span>C / B / A / S / SSS / SSSS 稀有度，捕捉、进化、骑乘、同行。</span></div>
-          <div><b>异世界终局</b><span>带一套装备与最多两只精灵进入暗域，击败末影龙后才可返回。</span></div>
-          <div><b>性能重构</b><span>区块流式生成、InstancedMesh、视距裁剪，减少重复绘制与卡顿。</span></div>
-        </div>
-        <div class="start-tip">进入后点击游戏画面锁定鼠标；按 Esc 释放鼠标。</div>
-      </div>
-    </div>
+    <div id="start-screen" class="start-screen"><div class="start-hero"><div class="eyebrow">THREE.JS VOXEL SURVIVAL</div><h1>方块纪元：六境与异界</h1><p>探索六大生态，建造、生存、捕捉并进化精灵，解锁祭坛，最终挑战虚空末影龙。</p><div class="hero-actions"><button id="start-game" class="primary-action">进入世界</button><button id="reset-save" class="secondary-action">重置存档</button></div><div class="hero-grid"><div><b>体素建造</b><span>拆除、放置、堆叠与自动存档。</span></div><div><b>真实 3D</b><span>桌面鼠标视角，手机双区触控。</span></div><div><b>六境任务</b><span>六大生态拥有不同生存条件。</span></div><div><b>精灵生态</b><span>C 至 SSSS，捕捉、进化、骑乘、同行。</span></div><div><b>异世界终局</b><span>带精灵进入暗域挑战末影龙。</span></div><div><b>Android 模式</b><span>横屏摇杆、触控镜头与大尺寸操作键。</span></div></div><div class="start-tip">桌面：点击画面锁定鼠标；Android：直接使用触控区域。</div></div></div>
   </div>
 
+  <script>
+    (()=>{let booted=false;window.__voxelBooted=()=>{booted=true;};const show=e=>{if(booted)return;const box=document.getElementById('boot-error'),detail=document.getElementById('boot-error-detail');if(!box||!detail)return;detail.textContent=(e&&e.message)||String(e||'Unknown startup error');box.classList.add('show');};window.addEventListener('error',e=>show(e.error||e.message));window.addEventListener('unhandledrejection',e=>show(e.reason));})();
+  </script>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
