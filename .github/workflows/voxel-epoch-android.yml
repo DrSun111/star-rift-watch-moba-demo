@@ -9,6 +9,7 @@ on:
       - 'scripts/build-voxel-mobile.mjs'
       - 'scripts/patch-voxel-android.mjs'
       - 'capacitor.config.json'
+      - '.github/voxel-assets/**'
       - '.github/workflows/voxel-epoch-android.yml'
   pull_request:
     branches: [main]
@@ -17,6 +18,7 @@ on:
       - 'scripts/build-voxel-mobile.mjs'
       - 'scripts/patch-voxel-android.mjs'
       - 'capacitor.config.json'
+      - '.github/voxel-assets/**'
       - '.github/workflows/voxel-epoch-android.yml'
 
 permissions:
@@ -42,8 +44,19 @@ jobs:
       - name: Install web dependencies
         run: npm ci
 
-      - name: Prepare offline high-fidelity game assets
+      - name: Prepare fully offline game assets
         run: node scripts/build-voxel-mobile.mjs
+
+      - name: Verify Android web package is offline
+        run: |
+          test -f mobile-dist/index.html
+          test -f mobile-dist/build-info.json
+          grep -q '正在进入许总的世界' mobile-dist/index.html
+          if grep -R -E 'cdn\.jsdelivr\.net|unpkg\.com|threejs\.org' mobile-dist; then
+            echo 'External runtime dependency detected in mobile-dist'
+            exit 1
+          fi
+          echo 'Offline web package verification passed.'
 
       - name: Install Capacitor 8 build tools
         run: npm install --no-save @capacitor/cli@^8.0.0 @capacitor/core@^8.0.0 @capacitor/android@^8.0.0
@@ -61,10 +74,10 @@ jobs:
           ./gradlew assembleDebug --stacktrace
 
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk VoxelEpoch-SixRealms-debug.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk VoxelEpoch-SixRealms-Offline-debug.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: VoxelEpoch-Android-APK
-          path: VoxelEpoch-SixRealms-debug.apk
+          name: VoxelEpoch-Android-Offline-APK
+          path: VoxelEpoch-SixRealms-Offline-debug.apk
           retention-days: 30
