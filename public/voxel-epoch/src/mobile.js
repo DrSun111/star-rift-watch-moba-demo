@@ -4,6 +4,7 @@ export class MobileControls{
     this.enabled=(navigator.maxTouchPoints||0)>0||matchMedia('(pointer:coarse)').matches||/Android|Mobile/i.test(navigator.userAgent);
     this.movePointer=null;this.lookPointer=null;this.moveOrigin={x:0,y:0};this.lookLast={x:0,y:0};
     if(!this.enabled)return;
+    if(!document.querySelector('link[data-mobile-controls-style]')){const link=document.createElement('link');link.rel='stylesheet';link.href='./mobile.css';link.dataset.mobileControlsStyle='1';document.head.appendChild(link);}
     document.body.classList.add('mobile-game');this.build();this.bind();
   }
   build(){
