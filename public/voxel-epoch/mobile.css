@@ -1,0 +1,24 @@
+/* Android / touch controls */
+#mobile-controls{display:none}
+body.mobile-game{touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+body.mobile-game #controls-strip{display:none!important}
+body.mobile-game #top-hud{height:58px;top:8px;left:8px;right:8px;padding:6px 8px}
+body.mobile-game .brand-mark{width:38px;height:38px}.mobile-game .brand-copy strong{font-size:13px}.mobile-game .brand-copy small{display:none}
+body.mobile-game #quest-panel{left:9px;top:75px;width:230px;padding:9px}.mobile-game #status-panel{left:9px;bottom:122px;width:210px;padding:7px 8px}.mobile-game #minimap-panel{right:9px;top:75px;width:190px;padding:7px}.mobile-game .minimap-panel canvas{height:116px}
+body.mobile-game #hotbar{bottom:9px;padding:5px;gap:4px}.mobile-game .slot{width:48px;height:48px;border-radius:10px}.mobile-game .slot .icon{font-size:19px}.mobile-game .slot .name{display:none}.mobile-game .slot .idx{font-size:7px}.mobile-game .slot .count{font-size:8px}
+body.mobile-game #crosshair{z-index:25}
+body.mobile-game .drawer{right:5vw;left:5vw;width:auto;top:6vh;bottom:6vh}.mobile-game .modal-shell{padding:8px}.mobile-game .map-modal{width:98vw}.mobile-game .map-modal canvas{height:72vh}
+body.mobile-game .start-screen{padding:12px}.mobile-game .start-hero{width:96vw}.mobile-game .start-hero h1{font-size:29px}.mobile-game .start-hero>p{font-size:11px}.mobile-game .hero-grid{grid-template-columns:repeat(2,1fr);gap:6px;margin-top:12px}.mobile-game .hero-grid>div{padding:8px}.mobile-game .start-tip{display:none}
+#mobile-controls{position:fixed;inset:0;z-index:27;pointer-events:none}
+.mobile-game #mobile-controls{display:block}
+.mobile-look-zone{position:absolute;left:40%;right:0;top:66px;bottom:0;pointer-events:auto;touch-action:none}
+.mobile-stick{position:absolute;left:26px;bottom:132px;width:118px;height:118px;border-radius:50%;pointer-events:auto;touch-action:none;filter:drop-shadow(0 8px 22px rgba(0,0,0,.28))}
+.stick-ring{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.055) 0 37%,rgba(8,18,27,.55) 39% 60%,rgba(116,223,182,.22) 62% 66%,rgba(8,18,27,.38) 68%);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(8px)}
+.stick-knob{position:absolute;left:50%;top:50%;margin:-27px;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#b7f8da,#46c88f 60%,#20865f);border:2px solid rgba(255,255,255,.3);box-shadow:0 8px 18px rgba(0,0,0,.28),inset 0 2px 4px rgba(255,255,255,.38);will-change:transform}
+.mobile-actions{position:absolute;right:18px;bottom:78px;width:218px;height:190px;pointer-events:none}
+.m-action{position:absolute;width:68px;height:68px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:linear-gradient(145deg,rgba(23,38,55,.9),rgba(7,14,23,.86));box-shadow:0 10px 22px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.08);pointer-events:auto;touch-action:none;font-size:20px;font-weight:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.m-action small{font-size:7px;font-weight:700;color:#b7c6d7}.m-action:active{transform:scale(.94);background:linear-gradient(145deg,rgba(72,125,109,.92),rgba(12,45,34,.92))}
+.m-action.attack{right:0;bottom:43px;width:78px;height:78px;border-color:rgba(255,124,124,.35);background:radial-gradient(circle at 40% 35%,rgba(255,112,112,.35),rgba(56,18,25,.86))}.m-action.place{right:72px;bottom:0}.m-action.interact{right:80px;bottom:79px}.m-action.jump{right:8px;bottom:128px}.m-action.down{right:150px;bottom:96px;width:55px;height:55px}.m-action.capture{right:145px;bottom:30px;width:58px;height:58px;border-color:rgba(213,159,255,.28)}
+.mobile-top-actions{position:absolute;right:12px;top:72px;display:flex;gap:6px;pointer-events:auto}.mobile-top-actions button,.mobile-sprint{border:1px solid rgba(255,255,255,.13);background:rgba(8,17,27,.72);backdrop-filter:blur(8px);border-radius:12px;padding:9px 12px;font-size:10px;box-shadow:0 8px 20px rgba(0,0,0,.2);touch-action:none}.mobile-top-actions button:active,.mobile-sprint:active{background:rgba(77,185,140,.45)}
+.mobile-sprint{position:absolute;left:42px;bottom:92px;pointer-events:auto;color:#c9f9e5}
+@media(max-width:760px) and (orientation:landscape){body.mobile-game #quest-panel{width:205px}.mobile-game #minimap-panel{width:164px}.mobile-game .minimap-panel canvas{height:96px}.mobile-stick{left:18px;bottom:84px;width:104px;height:104px}.stick-knob{margin:-24px;width:48px;height:48px}.mobile-actions{right:9px;bottom:48px;transform:scale(.9);transform-origin:right bottom}.mobile-sprint{left:28px;bottom:56px}.mobile-game #status-panel{bottom:79px}}
