@@ -1,0 +1,14 @@
+{
+  "name": "方块纪元：六境与异界",
+  "short_name": "方块纪元",
+  "description": "Three.js 体素生存、建造、精灵养成与异世界冒险游戏",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#081018",
+  "theme_color": "#101a24",
+  "icons": [
+    {"src":"./favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
