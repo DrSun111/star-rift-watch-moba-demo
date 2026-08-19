@@ -10,7 +10,7 @@ function hexToRgb(hex){
   return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
 }
 function makeTexture({base,noise=22,spots=[],lines=[],alpha=255,seed=1}){
-  const size=16, c=document.createElement('canvas'); c.width=size;c.height=size;
+  const size=64, c=document.createElement('canvas'); c.width=size;c.height=size;
   const ctx=c.getContext('2d'); const img=ctx.createImageData(size,size); const rgb=hexToRgb(base);
   for(let y=0;y<size;y++) for(let x=0;x<size;x++){
     const n=(hash(x,y,seed)-.5)*noise;
@@ -23,12 +23,13 @@ function makeTexture({base,noise=22,spots=[],lines=[],alpha=255,seed=1}){
     ctx.fillStyle=`rgb(${srgb.join(',')})`;
     for(let i=0;i<count;i++){
       const x=Math.floor(hash(i,seed+8,seed)*size), y=Math.floor(hash(i,seed+17,seed)*size);
-      ctx.fillRect(x,y,s.w||1,s.h||1);
+      ctx.fillRect(x,y,s.w||2,s.h||2);
     }
   }
   for(const l of lines){
     ctx.fillStyle=l.color;
-    for(let p=l.start||0;p<size;p+=l.every||4){
+    const step=(l.every||4)*4;
+    for(let p=(l.start||0)*4;p<size;p+=step){
       if(l.axis==='x') ctx.fillRect(0,p,size,l.width||1); else ctx.fillRect(p,0,l.width||1,size);
     }
   }
@@ -48,8 +49,8 @@ export function createBlockMaterials(){
     snow:makeTexture({base:'#e7f2f5',noise:10,spots:[{color:'#cfe2ea',count:11}],seed:6}),
     tropicalGrass:makeTexture({base:'#439963',noise:31,spots:[{color:'#67ba79',count:18},{color:'#2e774e',count:13}],seed:7}),
     dryGrass:makeTexture({base:'#927147',noise:25,spots:[{color:'#b2915a',count:14},{color:'#705436',count:15}],seed:8}),
-    wood:makeTexture({base:'#8e6748',noise:17,lines:[{axis:'y',every:4,color:'#6d4f39'}],spots:[{color:'#a87d57',count:8}],seed:9}),
-    leaves:makeTexture({base:'#39714b',noise:40,spots:[{color:'#5d9467',count:24},{color:'#275a3c',count:18}],seed:10}),
+    wood:makeTexture({base:'#916a47',noise:18,lines:[{axis:'y',every:4,color:'#5e412f'},{axis:'x',every:8,color:'rgba(210,170,120,.18)',width:1}],spots:[{color:'#af7f56',count:12},{color:'#76513b',count:8}],seed:9}),
+    leaves:makeTexture({base:'#3e7a4d',noise:42,spots:[{color:'#67a772',count:26},{color:'#2a5e39',count:18},{color:'#8ec58f',count:7}],seed:10}),
     cactus:makeTexture({base:'#3d8d59',noise:18,lines:[{axis:'y',every:4,color:'#2f7146'}],seed:11}),
     ironOre:makeTexture({base:'#81888b',noise:24,spots:[{color:'#c29c78',count:20,w:2,h:1}],seed:12}),
     crystalOre:makeTexture({base:'#707b83',noise:22,spots:[{color:'#75d8ff',count:18,w:2,h:2},{color:'#b2f0ff',count:7}],seed:13}),
@@ -59,20 +60,25 @@ export function createBlockMaterials(){
     basalt:makeTexture({base:'#3b3742',noise:26,spots:[{color:'#201d25',count:16},{color:'#56505f',count:12}],seed:17}),
     ember:makeTexture({base:'#6c332e',noise:24,spots:[{color:'#ff8b43',count:18,w:2,h:1},{color:'#ffcf63',count:8}],seed:18}),
     water:makeTexture({base:'#3a8dbc',noise:13,lines:[{axis:'x',every:5,color:'rgba(137,211,240,.5)'}],alpha:190,seed:19}),
+    fruit:makeTexture({base:'#d05a40',noise:16,spots:[{color:'#f2c35b',count:10,w:1,h:1},{color:'#932d1e',count:6}],seed:20}),
   };
 
   const materials={};
   for(const [key,tex] of Object.entries(textures)){
     const isWater=key==='water', isGlow=key==='glow'||key==='ember';
+    const roughness={stone:.94,ironOre:.76,crystalOre:.5,obsidian:.36,glow:.32,ice:.18,water:.2,wood:.82,leaves:.72,fruit:.42,ember:.44}[key] ?? .86;
+    const metalness={ironOre:.12,obsidian:.08,glow:.08,crystalOre:.03}[key] ?? 0;
     materials[key]=new THREE.MeshStandardMaterial({
       map:tex,
-      roughness:isWater?.28:.88,
-      metalness:0,
+      bumpMap:isWater?null:tex,
+      bumpScale:['stone','sandstone','wood','basalt','ironOre','crystalOre'].includes(key)?.065:.028,
+      roughness,
+      metalness,
       transparent:isWater,
-      opacity:isWater?.72:1,
+      opacity:isWater?.76:1,
       depthWrite:!isWater,
-      emissive:isGlow?new THREE.Color(key==='ember'?'#6d1f10':'#6f5b16'):new THREE.Color(0x000000),
-      emissiveIntensity:isGlow?.48:0,
+      emissive:isGlow?new THREE.Color(key==='ember'?'#6d1f10':'#6f5b16'):key==='fruit'?new THREE.Color('#6f261a'):new THREE.Color(0x000000),
+      emissiveIntensity:isGlow?.62:(key==='fruit'?.1:0),
       alphaTest:isWater?0:.01,
     });
   }
