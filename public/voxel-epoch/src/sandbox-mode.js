@@ -64,14 +64,14 @@ if(!Gameplay.prototype.__sandboxInfiniteV20){
     const previousStage=p.evolutionStage;
     let nextStage=previousStage+1;
     let cycle=p.evolutionCycle||0;
-    if(nextStage>20){nextStage=1;cycle+=1;}
+    if(previousStage>=20){nextStage=20;cycle+=1;}
     const def=stageFor(nextStage);
     const previousPower=Number(p.power)||6;
-    const cycleBonus=cycle*140;
+    const transcendBonus=cycle*45;
 
     Object.assign(p,{
-      name:def.name,
-      rank:cycle>0?'SSSS':def.rank,
+      name:cycle>0?`超越${cycle}·${def.name}`:def.name,
+      rank:def.rank,
       kind:def.kind,
       variant:def.variant,
       mount:def.mount,
@@ -81,7 +81,7 @@ if(!Gameplay.prototype.__sandboxInfiniteV20){
       level:(p.level||1)+2,
       exp:0,
       bond:Math.min(100,(p.bond??20)+5),
-      power:Math.max(previousPower+Math.max(3,Math.round(def.power*.12)),def.power+cycleBonus),
+      power:Math.max(previousPower+Math.max(3,Math.round(def.power*.12)),def.power+transcendBonus),
     });
 
     const ai=this.state.activePets?.findIndex(x=>x.id===p.id);
@@ -89,8 +89,8 @@ if(!Gameplay.prototype.__sandboxInfiniteV20){
     this.entities.spawnFollowers();
     if(this.state.mountedPet===p.id){this.player.mountVisualId=null;this.player.syncMountVisual();}
     ensureInfinite(this.state);
-    const cycleText=cycle>0?` · 第 ${cycle+1} 轮回`:'';
-    this.ui.toast(`无限进化：形态 ${nextStage}/20「${def.name}」${cycleText} · 战力 ${p.power}`,'good');
+    const extra=nextStage===20&&cycle>0?` · 超越 ${cycle}`:'';
+    this.ui.toast(`无限进化：形态 ${nextStage}/20「${def.name}」${extra} · 战力 ${p.power}`,'good');
   };
 }
 
@@ -120,17 +120,17 @@ if(!GameUI.prototype.__sandboxInfiniteV20){
     if(this.activeTab==='craft')root.querySelectorAll('[data-craft]').forEach(btn=>btn.disabled=false);
     if(this.activeTab==='pets'){
       const banner=root.querySelector('.pet-command-banner span');
-      if(banner)banner.textContent='灵果 ∞ · 晶核 ∞ · 20形态无限进化';
+      if(banner)banner.textContent='灵果 ∞ · 晶核 ∞ · 20形态 + 无限超越';
       const cards=[...root.querySelectorAll('.pet-card')];
       cards.forEach((card,i)=>{
         const p=this.state.pets?.[i];if(!p)return;ensurePetEvolution(p);
-        const stage=stageFor(p.evolutionStage),next=stageFor(p.evolutionStage===20?1:p.evolutionStage+1),cycle=p.evolutionCycle||0;
+        const stage=stageFor(p.evolutionStage),nextStage=p.evolutionStage>=20?20:p.evolutionStage+1,next=stageFor(nextStage),cycle=p.evolutionCycle||0;
         const title=card.querySelector('.pet-title');
-        if(title&&!title.querySelector('.evo-stage-chip'))title.insertAdjacentHTML('beforeend',`<span class="evo-stage-chip">形态 ${p.evolutionStage}/20${cycle?` · 轮回${cycle+1}`:''}</span>`);
+        if(title&&!title.querySelector('.evo-stage-chip'))title.insertAdjacentHTML('beforeend',`<span class="evo-stage-chip">形态 ${p.evolutionStage}/20${cycle?` · 超越${cycle}`:''}</span>`);
         const note=card.querySelector('.pet-evolve-note');
-        if(note)note.textContent=`当前形态：${stage.name} · 下一形态：${next.name}。第20形态后进入下一轮回，可永久继续进化，战力持续增长。`;
+        if(note)note.textContent=p.evolutionStage>=20?`最终形态：${stage.name}。可继续无限超越，每次提升等级、亲密度与战力，没有上限。`:`当前形态：${stage.name} · 下一形态：${next.name}。共20种形态，到达最终形态后仍可无限超越。`;
         const btn=card.querySelector('[data-evolve]');
-        if(btn){btn.disabled=false;btn.textContent=`进化 → ${next.name}`;}
+        if(btn){btn.disabled=false;btn.textContent=p.evolutionStage>=20?`终焉超越 +1`:`进化 → ${next.name}`;}
       });
     }
     return r;
