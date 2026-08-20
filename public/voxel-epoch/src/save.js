@@ -1,4 +1,5 @@
 import { DEFAULT_STATE } from './config.js';
+import './sandbox-mode.js';
 
 const KEY='voxel_epoch_threejs_save_v3';
 function clone(v){return JSON.parse(JSON.stringify(v));}
