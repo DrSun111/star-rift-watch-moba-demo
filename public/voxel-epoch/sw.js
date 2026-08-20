@@ -1,5 +1,5 @@
-const CACHE='voxel-epoch-v5';
-const CORE=['./','./index.html','./styles.css','./favicon.svg','./manifest.webmanifest','./src/main.js','./src/config.js','./src/textures.js','./src/world.js','./src/player.js','./src/entities.js','./src/gameplay.js','./src/ui.js','./src/save.js'];
+const CACHE='voxel-epoch-v6-infinite-evo20';
+const CORE=['./','./index.html','./styles.css','./favicon.svg','./manifest.webmanifest','./src/main.js','./src/config.js','./src/textures.js','./src/world.js','./src/player.js','./src/entities.js','./src/gameplay.js','./src/ui.js','./src/save.js','./src/sandbox-mode.js'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));
