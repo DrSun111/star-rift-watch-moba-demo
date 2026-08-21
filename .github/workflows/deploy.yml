@@ -33,6 +33,21 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Inject latest lottery runtime
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for name in ('index.html', 'v2.html'):
+              p = Path('dist/quantum-lottery') / name
+              if not p.exists():
+                  continue
+              s = p.read_text(encoding='utf-8')
+              tag = '<script src="./probability-v6.js?v=20260821-1721"></script>'
+              if tag not in s:
+                  s = s.replace('</body>', tag + '</body>')
+              p.write_text(s, encoding='utf-8')
+          PY
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
