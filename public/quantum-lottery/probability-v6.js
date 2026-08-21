@@ -1,11 +1,11 @@
 // Runtime lottery probability override. Probabilities are intentionally not rendered in the UI.
 chooseType = function(){
   const n = secureInt(100000);
-  if(n < 19920) return 'penalty';      // 19.92%
-  if(n < 39840) return 'thanks';       // 19.92%
-  if(n < 59760) return 'notebook';     // 19.92%
-  if(n < 79680) return 'pen';          // 19.92%
-  if(n < 99600) return 'water';        // 19.92%
+  if(n < 42300) return 'penalty';      // 42.30%
+  if(n < 84600) return 'thanks';       // 42.30%
+  if(n < 89600) return 'notebook';     // 5.00%
+  if(n < 94600) return 'pen';          // 5.00%
+  if(n < 99600) return 'water';        // 5.00%
   if(n < 99700) return 'rolls';        // 0.10%
   if(n < 99800) return 'rolex';        // 0.10%
   if(n < 99900) return 'dji';          // 0.10%
