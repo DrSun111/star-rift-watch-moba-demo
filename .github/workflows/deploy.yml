@@ -44,8 +44,8 @@ jobs:
               if not p.exists():
                   continue
               s = p.read_text(encoding='utf-8')
-              prob = '<script src="./probability-v6.js?v=20260821-1825"></script>'
-              mobile = '<script src="./mobile-v1.js?v=20260821-1825"></script>'
+              prob = '<script src="./probability-v6.js?v=20260821-1840"></script>'
+              mobile = '<script src="./mobile-v1.js?v=20260821-1840"></script>'
               if 'probability-v6.js' not in s:
                   s = s.replace('</body>', prob + mobile + '</body>')
               else:
@@ -60,11 +60,16 @@ jobs:
           admin = root / 'admin.html'
           if admin.exists():
               s = admin.read_text(encoding='utf-8')
-              tag = '<script src="./admin-history-v1.js?v=20260821-1825"></script>'
+              history = '<script src="./admin-history-v1.js?v=20260821-1840"></script>'
+              modes = '<script src="./admin-code-modes-v1.js?v=20260821-1840"></script>'
               if 'admin-history-v1.js' not in s:
-                  s = s.replace('</body>', tag + '</body>')
+                  s = s.replace('</body>', history + modes + '</body>')
               else:
-                  s = re.sub(r'<script src="\./admin-history-v1\.js\?v=[^"]+"></script>', tag, s)
+                  s = re.sub(r'<script src="\./admin-history-v1\.js\?v=[^"]+"></script>', history, s)
+                  if 'admin-code-modes-v1.js' not in s:
+                      s = s.replace('</body>', modes + '</body>')
+                  else:
+                      s = re.sub(r'<script src="\./admin-code-modes-v1\.js\?v=[^"]+"></script>', modes, s)
               admin.write_text(s, encoding='utf-8')
           PY
 
