@@ -37,18 +37,30 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
+          root = Path('dist/quantum-lottery')
           for name in ('index.html', 'v2.html'):
-              p = Path('dist/quantum-lottery') / name
+              p = root / name
               if not p.exists():
                   continue
               s = p.read_text(encoding='utf-8')
-              tag = '<script src="./probability-v6.js?v=20260821-1726"></script>'
+              prob = '<script src="./probability-v6.js?v=20260821-1731"></script>'
+              track = '<script src="./tracking-v7.js?v=20260821-1731"></script>'
               if 'probability-v6.js' not in s:
-                  s = s.replace('</body>', tag + '</body>')
+                  s = s.replace('</body>', prob + track + '</body>')
               else:
-                  import re
-                  s = re.sub(r'<script src="\./probability-v6\.js\?v=[^"]+"></script>', tag, s)
+                  s = re.sub(r'<script src="\./probability-v6\.js\?v=[^"]+"></script>', prob, s)
+                  if 'tracking-v7.js' not in s:
+                      s = s.replace('</body>', track + '</body>')
               p.write_text(s, encoding='utf-8')
+
+          admin = root / 'admin.html'
+          if admin.exists():
+              s = admin.read_text(encoding='utf-8')
+              tag = '<script src="./admin-tracking-v7.js?v=20260821-1731"></script>'
+              if 'admin-tracking-v7.js' not in s:
+                  s = s.replace('</body>', tag + '</body>')
+              admin.write_text(s, encoding='utf-8')
           PY
 
       - name: Setup Pages
