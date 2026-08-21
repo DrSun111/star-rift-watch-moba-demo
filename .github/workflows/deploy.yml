@@ -44,22 +44,22 @@ jobs:
               if not p.exists():
                   continue
               s = p.read_text(encoding='utf-8')
-              prob = '<script src="./probability-v6.js?v=20260821-1740"></script>'
-              history = '<script src="./history-code-v1.js?v=20260821-1740"></script>'
+              prob = '<script src="./probability-v6.js?v=20260821-1808"></script>'
               if 'probability-v6.js' not in s:
-                  s = s.replace('</body>', prob + history + '</body>')
+                  s = s.replace('</body>', prob + '</body>')
               else:
                   s = re.sub(r'<script src="\./probability-v6\.js\?v=[^"]+"></script>', prob, s)
-                  if 'history-code-v1.js' not in s:
-                      s = s.replace('</body>', history + '</body>')
+              s = re.sub(r'<script src="\./history-code-v1\.js\?v=[^"]+"></script>', '', s)
               p.write_text(s, encoding='utf-8')
 
           admin = root / 'admin.html'
           if admin.exists():
               s = admin.read_text(encoding='utf-8')
-              tag = '<script src="./admin-history-v1.js?v=20260821-1740"></script>'
+              tag = '<script src="./admin-history-v1.js?v=20260821-1808"></script>'
               if 'admin-history-v1.js' not in s:
                   s = s.replace('</body>', tag + '</body>')
+              else:
+                  s = re.sub(r'<script src="\./admin-history-v1\.js\?v=[^"]+"></script>', tag, s)
               admin.write_text(s, encoding='utf-8')
           PY
 
