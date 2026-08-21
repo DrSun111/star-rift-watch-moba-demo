@@ -42,9 +42,12 @@ jobs:
               if not p.exists():
                   continue
               s = p.read_text(encoding='utf-8')
-              tag = '<script src="./probability-v6.js?v=20260821-1721"></script>'
-              if tag not in s:
+              tag = '<script src="./probability-v6.js?v=20260821-1726"></script>'
+              if 'probability-v6.js' not in s:
                   s = s.replace('</body>', tag + '</body>')
+              else:
+                  import re
+                  s = re.sub(r'<script src="\./probability-v6\.js\?v=[^"]+"></script>', tag, s)
               p.write_text(s, encoding='utf-8')
           PY
 
