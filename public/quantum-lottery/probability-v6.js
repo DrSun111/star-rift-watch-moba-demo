@@ -1,11 +1,12 @@
 // Runtime lottery probability override. Probabilities are intentionally not rendered in the UI.
 chooseType = function(){
   const n = secureInt(100000);
-  if(n < 42300) return 'penalty';
-  if(n < 84600) return 'thanks';
-  if(n < 89600) return 'notebook';
-  if(n < 94600) return 'pen';
-  if(n < 99600) return 'water';
+  if(n < 20000) return 'penalty';
+  if(n < 79600) return 'thanks';
+  if(n < 84600) return 'notebook';
+  if(n < 89600) return 'pen';
+  if(n < 94600) return 'water';
+  if(n < 99600) return 'gift10';
   if(n < 99700) return 'rolls';
   if(n < 99800) return 'rolex';
   if(n < 99900) return 'dji';
@@ -15,6 +16,17 @@ chooseType = function(){
 // Remove the legacy filler sector so every visible sector can actually be selected.
 const blankIndex = prizes.findIndex(p => p.type === 'blank');
 if(blankIndex >= 0) prizes.splice(blankIndex, 1);
+
+// Add the new 10-yuan gift prize if the base page does not already contain it.
+if(!prizes.some(p=>p.type==='gift10')){
+  const insertAt=Math.min(5,prizes.length);
+  prizes.splice(insertAt,0,{type:'gift10',label:'赠送10元',icon:'💵',text:'恭喜抽中赠送 10 元。',win:true});
+}
+
+// Refresh the visible prize gallery so the new prize is shown on both desktop and mobile.
+if(typeof gallery!=='undefined' && gallery){
+  gallery.innerHTML=prizes.map(p=>`<div class="card"><div class="ico">${p.icon}</div><div class="meta"><b>${p.label}</b><p>${p.text}</p></div></div>`).join('');
+}
 
 drawWheel = function(){
   const W=wheel.width,c=W/2,r=W*.48,count=prizes.length,step=Math.PI*2/count;
@@ -70,7 +82,7 @@ document.head.appendChild(fiveDrawStyle);
   const modal=document.createElement('div');
   modal.id='claimCodeModal';
   modal.className='modal';
-  modal.innerHTML=`<div class="claim-panel"><div class="rk">PRIZE VERIFICATION CODE</div><h2>兑奖核验码</h2><p>生成后，把此码提供给管理员。管理员可查看本机截至当前的全部抽奖记录，包括“倒贴10元”。</p><div class="claim-code" id="claimCodeValue"></div><div class="claim-msg" id="claimCodeMsg">点击下方按钮生成。</div><div class="claim-actions"><button class="primary" id="claimCodeGenerate">生成核验码</button><button id="claimCodeClose">关闭</button></div></div>`;
+  modal.innerHTML=`<div class="claim-panel"><div class="rk">PRIZE VERIFICATION CODE</div><h2>兑奖核验码</h2><p>生成后，把此码提供给管理员。管理员可查看本机截至当前的全部抽奖记录，包括“倒贴10元”和“赠送10元”。</p><div class="claim-code" id="claimCodeValue"></div><div class="claim-msg" id="claimCodeMsg">点击下方按钮生成。</div><div class="claim-actions"><button class="primary" id="claimCodeGenerate">生成核验码</button><button id="claimCodeClose">关闭</button></div></div>`;
   document.body.appendChild(modal);
 
   const codeEl=modal.querySelector('#claimCodeValue');
