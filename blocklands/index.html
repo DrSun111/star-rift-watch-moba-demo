@@ -3,13 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Blocklands Survival · Galaxy V2.8</title>
-<style>
-html,body{margin:0;width:100%;height:100%;background:#0b0e12;color:#eef3eb;font-family:system-ui,"Microsoft YaHei",sans-serif}#loading{height:100%;display:grid;place-items:center;text-align:center;padding:24px}small{color:#aab5aa}
-</style>
+<title>Blocklands Survival · Galaxy V2.8.1</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#0b0e12;color:#eef3eb;font-family:system-ui,"Microsoft YaHei",sans-serif}#loading{height:100%;display:grid;place-items:center;text-align:center;padding:24px}small{color:#aab5aa}</style>
 </head>
 <body>
-<div id="loading"><div>正在载入 Blocklands Survival · Galaxy…<br><small>手机端首次打开需要下载游戏资源。</small></div></div>
+<div id="loading"><div>正在载入 Blocklands Survival · Galaxy V2.8.1…<br><small>正在修复星球布局并载入手机端游戏。</small></div></div>
 <script>
 (async()=>{
   try{
@@ -21,10 +19,14 @@ html,body{margin:0;width:100%;height:100%;background:#0b0e12;color:#eef3eb;font-
     const bytes=new Uint8Array(raw.length);
     for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-    const html=await new Response(stream).text();
-    document.open();
-    document.write(html);
-    document.close();
+    let html=await new Response(stream).text();
+    if(!html.includes("const planetLayoutDefs")){
+      const anchor="      const recipes = {";
+      if(!html.includes(anchor))throw new Error("V2.8.1 修复补丁无法定位 recipes 定义。");
+      html=html.replace(anchor,'      const planetLayoutDefs = {\n        earth: { villages: [{i:20,j:22},{i:82,j:24},{i:27,j:78},{i:78,j:76},{i:52,j:18},{i:18,j:52},{i:86,j:52},{i:52,j:86}], villagePattern: [{x:-3,z:-2,style:"wood",rot:-0.12},{x:3,z:-2,style:"stone",rot:1.79},{x:-3,z:3,style:"wood",rot:3.08},{x:4,z:3,style:"stone",rot:4.92}] },\n        aridia: { villages: [{i:16,j:18},{i:38,j:20},{i:70,j:18},{i:88,j:34},{i:24,j:48},{i:52,j:40},{i:78,j:64},{i:58,j:84}], villagePattern: [{x:0,z:-5.2,style:"stone",rot:0.08},{x:-5,z:0.2,style:"wood",rot:1.56},{x:5,z:0.3,style:"wood",rot:-1.58},{x:0,z:5.4,style:"stone",rot:3.18}] },\n        glacia: { villages: [{i:18,j:26},{i:34,j:14},{i:58,j:18},{i:84,j:26},{i:20,j:72},{i:48,j:60},{i:76,j:72},{i:88,j:50}], villagePattern: [{x:-4.6,z:-1.4,style:"stone",rot:0.22},{x:4.6,z:-1.4,style:"stone",rot:-0.22},{x:-1.4,z:4.8,style:"wood",rot:2.76},{x:1.6,z:-5,style:"wood",rot:0.32}] },\n        nyx: { villages: [{i:16,j:40},{i:28,j:18},{i:50,j:28},{i:74,j:16},{i:86,j:42},{i:72,j:80},{i:42,j:86},{i:18,j:70}], villagePattern: [{x:-5.2,z:0,style:"wood",rot:1.57},{x:0,z:-5.2,style:"stone",rot:0},{x:5.2,z:0,style:"wood",rot:-1.57},{x:0,z:5.2,style:"stone",rot:3.14}] }\n      };\n\n'+anchor);
+    }
+    html=html.replace("Blocklands Survival · Galaxy","Blocklands Survival · Galaxy V2.8.1");
+    document.open();document.write(html);document.close();
   }catch(err){
     document.getElementById("loading").innerHTML="载入失败<br><small>"+String(err.message||err)+"</small>";
     console.error(err);
