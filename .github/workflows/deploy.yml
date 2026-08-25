@@ -33,6 +33,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Publish Blocklands game
+        run: |
+          rm -rf dist/blocklands
+          cp -R blocklands dist/blocklands
+          test -f dist/blocklands/index.html
+
       - name: Inject latest lottery runtime
         run: |
           python - <<'PY'
