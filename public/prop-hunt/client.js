@@ -1,4 +1,4 @@
-import{SCENES,PROPS,CHARACTERS,world,movePosition,speed,HIDE_MS,HUNT_MS}from './shared.js';
+import{SCENES,PROPS,CHARACTERS,world,movePosition,speed,HIDE_MS,HUNT_MS}from './shared.js?v=20261101.4';
 import{API_URL,PUBLIC_KEY}from './config.js';
 const THREE=window.THREE,$=id=>document.getElementById(id),TAU=Math.PI*2;
 function makeCanvasRenderer(canvas){
