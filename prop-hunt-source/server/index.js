@@ -1,0 +1,21 @@
+import {newRoom,makePlayer,act,snapshot,advance,VERSION} from './shared.js';
+const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'content-type,apikey,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Cache-Control':'no-store','Content-Type':'application/json'};
+function reply(data,status=200){return new Response(JSON.stringify(data),{status,headers:cors})}
+const URL=Deno.env.get('SUPABASE_URL'),legacy=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+let secret=legacy;try{secret=JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')||'{}').default||legacy}catch{}
+async function db(query,method='GET',body){const headers={'apikey':secret,'Content-Type':'application/json','Prefer':'return=representation'};if(secret?.startsWith('eyJ'))headers.Authorization='Bearer '+secret;const r=await fetch(URL+'/rest/v1/prop_hunt_rooms'+query,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});if(!r.ok){console.error('room database response',r.status);throw new Error('房间服务暂时繁忙，请稍后重试')}return r.status===204?[]:await r.json()}
+async function hash(s){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(bytes)].map(n=>n.toString(16).padStart(2,'0')).join('')}
+function randCode(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',v=crypto.getRandomValues(new Uint8Array(6));return [...v].map(n=>chars[n%chars.length]).join('')}
+function name(s){return String(s||'旅人').replace(/[<>\x00-\x1f]/g,'').slice(0,16)||'旅人'}
+const creates=new Map();
+Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});if(req.method==='GET')return reply({ok:true,game:'灯影捉迷藏',version:VERSION,region:Deno.env.get('SB_REGION')||'ap-southeast-1'});if(req.method!=='POST')return reply({error:'仅支持POST'},405);
+ try{const text=await req.text();if(text.length>5000)return reply({error:'请求过大'},413);const b=JSON.parse(text),now=Date.now();
+  if(b.action==='create'){const ip=req.headers.get('x-forwarded-for')||'unknown',entry=creates.get(ip)||{at:now,n:0};if(now-entry.at>60000){entry.at=now;entry.n=0}if(++entry.n>6)return reply({error:'创建房间太频繁，请一分钟后再试'},429);creates.set(ip,entry);if(creates.size>500)creates.clear();const token=crypto.randomUUID()+crypto.randomUUID(),tokenHash=await hash(token);let code=randCode();let rows=await db('?code=eq.'+code+'&select=code');if(rows.length)code=randCode();const seed=crypto.getRandomValues(new Uint32Array(1))[0];const state=newRoom(code,name(b.name),seed,now);await db('','POST',{code,version:0,state,credentials:[tokenHash,null],expires_at:new Date(now+2*3600000).toISOString()});return reply({token,room:{...snapshot(state,0,now),revision:0}})}
+  const code=String(b.code||'').toUpperCase();if(!/^[A-Z2-9]{6}$/.test(code))return reply({error:'请输入6位房间码'},400);const tokenHash=b.token?await hash(String(b.token)):null;
+  for(let attempt=0;attempt<7;attempt++){const rows=await db('?code=eq.'+code+'&select=*');if(!rows.length||Date.parse(rows[0].expires_at)<Date.now())return reply({error:'房间不存在或已过期，请重新创建'},404);const row=rows[0],s=row.state;const tickNow=Date.now();let index=tokenHash?row.credentials.indexOf(tokenHash):-1,token=null,info={};
+   if(b.action==='join'&&index<0){if(s.players[1]&&!s.players[1].left)return reply({error:'房间已满，仅支持2位玩家'},409);if(s.phase!=='lobby')return reply({error:'对局已经开始，请等下一局'},409);token=crypto.randomUUID()+crypto.randomUUID();row.credentials[1]=await hash(token);index=1;const hostRole=s.players[0].role;s.players[1]=makePlayer(name(b.name),hostRole==='hider'?'seeker':'hider',tickNow)}
+   else if(index<0)return reply({error:'身份已失效，请重新加入房间'},401);
+   if(b.action!=='join'){try{info=act(s,index,b,tickNow)}catch(error){return reply({error:String(error.message||error)},400)}}else {s.players[index].lastSeen=tickNow;advance(s,tickNow,index)}
+   const updated=await db('?code=eq.'+code+'&version=eq.'+row.version,'PATCH',{state:s,credentials:row.credentials,version:row.version+1});if(updated.length){return reply({...info,token:token||undefined,room:{...snapshot(s,index,tickNow),revision:row.version+1}})}await new Promise(resolve=>setTimeout(resolve,8+Math.random()*15));
+  }return reply({error:'房间同步繁忙，请重试'},409);
+ }catch(error){console.error('room request failed',String(error.message||error));return reply({error:'房间连接失败，请稍后重试'},500)}});
