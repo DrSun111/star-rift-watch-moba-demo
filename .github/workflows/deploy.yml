@@ -79,6 +79,12 @@ jobs:
               admin.write_text(s, encoding='utf-8')
           PY
 
+      - name: Publish Ci Jian garden
+        run: |
+          rm -rf dist/cijian
+          cp -R cijian dist/cijian
+          test -f dist/cijian/index.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
